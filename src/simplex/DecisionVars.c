@@ -1,10 +1,14 @@
-// DecisionVars.c
+// decisionVars.c
 
 #include "DecisionVars.h"
 
+const size_t MINIMUM_DECISION_VAR = 2;  // Minimum length for a decision variable name
+const size_t MAXIMUM_DECISION_VAR = 25; // Maximum length for a decision variable name
+
 // Create a new DecisionVariables struct with the given size.
 DecisionVariables* decision_vars_create(size_t size) {
-    if (size == 0) {
+    if (size < MINIMUM_DECISION_VAR || size > MAXIMUM_DECISION_VAR) {
+        printerr("Error: Invalid number of decision variables specified. Must be between %zu and %zu.\n", MINIMUM_DECISION_VAR, MAXIMUM_DECISION_VAR);
         return NULL;
     }
 
@@ -19,7 +23,6 @@ DecisionVariables* decision_vars_create(size_t size) {
         free(vars);
         return NULL;
     }
-
     for (size_t i = 0; i < size; i++) {
         vars->names[i] = NULL;  // Initialize names to NULL
     }
@@ -55,7 +58,7 @@ const char* decision_vars_get_var(DecisionVariables *vars, size_t index) {
 
 // Print names of decision variables for debugging purposes.
 void decision_vars_print(DecisionVariables *vars) {
-    printf("Decision Variables:\n");
+    printf("decision Variables:\n");
     for (int i = 0; i < vars->size; i++) {
         if (vars->names[i]) {
             printf("Variable %d: %s\n", i, vars->names[i]);

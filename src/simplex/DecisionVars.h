@@ -1,9 +1,12 @@
-// DecisionVars.h
-// Header file for DecisionVars.c
+// decisionVars.h
+// Header file for decisionVars.c
 // Data structure to manage decision variable names in a linear programming problem.
 
 #ifndef DECISIONVARS_H
 #define DECISIONVARS_H
+
+extern const size_t MINIMUM_DECISION_VARS; // Minimum length for a decision variable name
+extern const size_t MAXIMUM_DECISION_VARS; // Maximum length for a decision variable name
 
 #include <stdio.h>
 #include <stdlib.h>
