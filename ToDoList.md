@@ -6,14 +6,19 @@ This will be used for guidance on what needs to be implemented.
 
 ## Simplex Solver Logic
 ### Data structures for LP elements
+* [X] - Decision variables names
+* [X] - Objective function
+* [X] - Constraint definition
+* [X] - Constraints list
 
-* [ ] - Decision variables names
-* [ ] - Objective function
-* [ ] - Constraint definition
-* [ ] - Slack variable in constraint
-* [ ] - Constraints list
+NOTES: 
+Data Structure for LP is meant to represent the base mathematical models for LP problems.
+TBD: 
+* Whether to include slack variables in LP definitions (e.g. Constraints).
+* Or use the Constraints struct's array for constraint types to infer slack variables and their indices.
 
 ### Data structures for Simplex tableau
+* [ ] - Slack variables for constraints (where applicable)
 * [ ] - Simplex tableau baseline
 * [ ] - Simplex tableau matrix
 * [ ] - Reserve indices for objective row (row 0), objective var (col 0) and RHS (added last col)

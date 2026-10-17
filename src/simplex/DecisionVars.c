@@ -2,13 +2,13 @@
 
 #include "DecisionVars.h"
 
-const size_t MINIMUM_DECISION_VAR = 2;  // Minimum length for a decision variable name
-const size_t MAXIMUM_DECISION_VAR = 25; // Maximum length for a decision variable name
+const size_t MINIMUM_DECISION_VARS = 2;  // Minimum length for a decision variable name
+const size_t MAXIMUM_DECISION_VARS = 25; // Maximum length for a decision variable name
 
 // Create a new DecisionVariables struct with the given size.
 DecisionVariables* decision_vars_create(size_t size) {
-    if (size < MINIMUM_DECISION_VAR || size > MAXIMUM_DECISION_VAR) {
-        printerr("Error: Invalid number of decision variables specified. Must be between %zu and %zu.\n", MINIMUM_DECISION_VAR, MAXIMUM_DECISION_VAR);
+    if (size < MINIMUM_DECISION_VARS || size > MAXIMUM_DECISION_VARS) {
+        printf("Error: Invalid number of decision variables specified. Must be between %zu and %zu.\n", MINIMUM_DECISION_VARS, MAXIMUM_DECISION_VARS);
         return NULL;
     }
 
@@ -17,7 +17,7 @@ DecisionVariables* decision_vars_create(size_t size) {
         return NULL;
     }
 
-    vars->size = size;
+    vars->length = size;
     vars->names = (char **)malloc(size * sizeof(char *));
     if (!vars->names) {
         free(vars);
@@ -32,7 +32,7 @@ DecisionVariables* decision_vars_create(size_t size) {
 // Free the memory allocated for the DecisionVariables struct.
 void decision_vars_free(DecisionVariables *vars) {
     if (vars) {
-        for (size_t i = 0; i < vars->size; i++) {
+        for (size_t i = 0; i < vars->length; i++) {
             free(vars->names[i]); // Free each name
         }
         free(vars->names); // Free the array of names
@@ -42,7 +42,7 @@ void decision_vars_free(DecisionVariables *vars) {
 
 // Set the name of a decision variable at the specified index.
 void decision_vars_set_var(DecisionVariables *vars, size_t index, const char *name) {
-    if (index >= 0 && index < vars->size) {
+    if (index >= 0 && index < vars->length) {
         free(vars->names[index]); // Free existing name if any
         vars->names[index] = strdup(name); // Duplicate the new name
     }
@@ -50,7 +50,7 @@ void decision_vars_set_var(DecisionVariables *vars, size_t index, const char *na
 
 // Get the name of a decision variable at the specified index.
 const char* decision_vars_get_var(DecisionVariables *vars, size_t index) {
-    if (index >= 0 && index < vars->size) {
+    if (index >= 0 && index < vars->length) {
         return vars->names[index];
     }
     return NULL; // Return NULL if index is out of bounds
@@ -58,12 +58,13 @@ const char* decision_vars_get_var(DecisionVariables *vars, size_t index) {
 
 // Print names of decision variables for debugging purposes.
 void decision_vars_print(DecisionVariables *vars) {
-    printf("decision Variables:\n");
-    for (int i = 0; i < vars->size; i++) {
+    printf("--- Decision Variables ---\n");
+    for (int i = 0; i < vars->length; i++) {
         if (vars->names[i]) {
             printf("Variable %d: %s\n", i, vars->names[i]);
         } else {
             printf("Variable %d: (null)\n", i);
         }
     }
+    printf("\n");
 }
