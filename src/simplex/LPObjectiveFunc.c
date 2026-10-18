@@ -1,6 +1,6 @@
-// ObjectiveFunction.c
+// LPObjectiveFunction.c
 
-#include "ObjectiveFunction.h"
+#include "LPObjectiveFunc.h"
 
 
 // Create a new ObjectiveFunction struct with the given optimization type, number of decision variables, and coefficients.

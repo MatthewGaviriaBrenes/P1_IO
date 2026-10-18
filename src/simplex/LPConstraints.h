@@ -1,15 +1,14 @@
-// Constraints.h
-// TODO: REWORK
+// LPConstraints.h
 
-#ifndef CONSTRAINTS_H
-#define CONSTRAINTS_H
+#ifndef LPCONSTRAINTS_H
+#define LPCONSTRAINTS_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "Coefficients.h"
-#include "DecisionVars.h"
+#include "LPCoefficients.h"
+#include "LPDecisionVars.h"
 
 extern const size_t MINIMUM_CONSTRAINTS; // Minimum number of constraints
 extern const size_t MAXIMUM_CONSTRAINTS; // Maximum number of constraints

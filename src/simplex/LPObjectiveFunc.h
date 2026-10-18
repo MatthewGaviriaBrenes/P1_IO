@@ -1,10 +1,10 @@
-// ObjectiveFunction.h
+// LPObjectiveFunction.h
 
-#ifndef OBJECTIVEFUNCTION_H
-#define OBJECTIVEFUNCTION_H
+#ifndef LPOBJECTIVEFUNCTION_H
+#define LPOBJECTIVEFUNCTION_H
 
-#include "DecisionVars.h"
-#include "Coefficients.h"
+#include "LPDecisionVars.h"
+#include "LPCoefficients.h"
 
 enum ObjectiveFunctionType {       
     MAXIMIZE,

@@ -1,9 +1,7 @@
-// decisionVars.h
-// Header file for decisionVars.c
-// Data structure to manage decision variable names in a linear programming problem.
+// LPDecisionVars.h
 
-#ifndef DECISIONVARS_H
-#define DECISIONVARS_H
+#ifndef LPDECISIONVARS_H
+#define LPDECISIONVARS_H
 
 #include <stdio.h>
 #include <stdlib.h>

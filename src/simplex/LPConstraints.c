@@ -1,6 +1,6 @@
-// Constraints.c
+// LPConstraints.c
 
-#include "Constraints.h"
+#include "LPConstraints.h"
 
 const size_t MINIMUM_CONSTRAINTS = 2; // Minimum number of constraints
 const size_t MAXIMUM_CONSTRAINTS = 25; // Maximum number of constraints

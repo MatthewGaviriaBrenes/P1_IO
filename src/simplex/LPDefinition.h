@@ -1,13 +1,12 @@
 // LPDefintion.h
-// TODO: REWORK
 
 #ifndef LPDEFINITION_H
 #define LPDEFINITION_H
 
-#include "DecisionVars.h"
-#include "ObjectiveFunction.h"
-#include "Coefficients.h"
-#include "Constraints.h"
+#include "LPDecisionVars.h"
+#include "LPObjectiveFunc.h"
+#include "LPCoefficients.h"
+#include "LPConstraints.h"
 
 typedef struct {
     // Define the structure for LPDefinition here

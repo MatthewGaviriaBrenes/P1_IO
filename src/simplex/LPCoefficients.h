@@ -1,9 +1,9 @@
-// Coefficients.h
+// LPCoefficients.h
 
-#include "DecisionVars.h"
+#include "LPDecisionVars.h"
 
-#ifndef COEFFICIENTS_H
-#define COEFFICIENTS_H
+#ifndef LPCOEFFICIENTS_H
+#define LPCOEFFICIENTS_H
 
 // Struct to hold the coefficients of decision variables a linear programming problem's objective function or constraints.
 typedef struct {

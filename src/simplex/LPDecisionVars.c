@@ -1,6 +1,6 @@
-// decisionVars.c
+// LPDecisionVars.c
 
-#include "DecisionVars.h"
+#include "LPDecisionVars.h"
 
 const size_t MINIMUM_DECISION_VARS = 2;  // Minimum length for a decision variable name
 const size_t MAXIMUM_DECISION_VARS = 25; // Maximum length for a decision variable name

@@ -1,6 +1,6 @@
-// Coefficients.c
+// LPCoefficients.c
 
-#include "Coefficients.h"
+#include "LPCoefficients.h"
 
 // Create a new CoefficientsSet struct with the given length and allocate memory for the coefficients array.
 // Initializes the coefficients array to zero.
