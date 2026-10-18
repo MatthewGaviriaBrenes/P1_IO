@@ -9,13 +9,13 @@ This will be used for guidance on what needs to be implemented.
 * [X] - Decision variables names
 * [X] - Objective function
 * [X] - Constraint definition
-* [X] - Constraints list
+* [X] - LPConstraints list
 
 NOTES: 
 Data Structure for LP is meant to represent the base mathematical models for LP problems.
 TBD: 
-* Whether to include slack variables in LP definitions (e.g. Constraints).
-* Or use the Constraints struct's array for constraint types to infer slack variables and their indices.
+* Whether to include slack variables in LP definitions (e.g. LPConstraints).
+* Or use the LPConstraints struct's array for constraint types to infer slack variables and their indices.
 
 ### Data structures for Simplex tableau
 * [ ] - Slack variables for constraints (where applicable)

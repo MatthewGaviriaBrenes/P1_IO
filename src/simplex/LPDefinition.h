@@ -15,18 +15,18 @@ typedef struct {
     size_t num_decision_vars;   // Number of decision variables
     size_t num_constraints;     // Number of constraints
     
-    DecisionVariables *decision_variables;      // The decision variables
-    ObjectiveFunction *objective_function;      // The objective function
-    Constraints *constraints;                   // The constraints of the LP problem
+    LPDecisionVars *decision_variables;      // The decision variables
+    LPObjectiveFunc *objective_function;      // The objective function
+    LPConstraints *constraints;                   // The constraints of the LP problem
 } LPDefinition;
 
 // Create a new baseline LPDefinition (definition of Linear Problem) with the given number of decision variables and constraints. 
 // This function initializes the LPDefinition struct with default values and allocates memory for its components.
 // Objective function and constraints will be set to NULL initially, and should be set later using appropriate setter functions.
 LPDefinition *lp_definition_create(
-    DecisionVariables *decision_vars, 
-    ObjectiveFunction *objective_func, 
-    Constraints *constraints
+    LPDecisionVars *decision_vars, 
+    LPObjectiveFunc *objective_func, 
+    LPConstraints *constraints
 );
 
 // Free the memory allocated for the LPDefinition struct and its components.

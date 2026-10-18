@@ -5,14 +5,14 @@
 const size_t MINIMUM_DECISION_VARS = 2;  // Minimum length for a decision variable name
 const size_t MAXIMUM_DECISION_VARS = 25; // Maximum length for a decision variable name
 
-// Create a new DecisionVariables struct with the given size.
-DecisionVariables* decision_vars_create(size_t size) {
+// Create a new LPDecisionVars struct with the given size.
+LPDecisionVars* lp_decisionvars_create(size_t size) {
     if (size < MINIMUM_DECISION_VARS || size > MAXIMUM_DECISION_VARS) {
         printf("Error: Invalid number of decision variables specified. Must be between %zu and %zu.\n", MINIMUM_DECISION_VARS, MAXIMUM_DECISION_VARS);
         return NULL;
     }
 
-    DecisionVariables *vars = (DecisionVariables *)malloc(sizeof(DecisionVariables));
+    LPDecisionVars *vars = (LPDecisionVars *)malloc(sizeof(LPDecisionVars));
     if (!vars) {
         return NULL;
     }
@@ -29,8 +29,8 @@ DecisionVariables* decision_vars_create(size_t size) {
     return vars;
 }
 
-// Free the memory allocated for the DecisionVariables struct.
-void decision_vars_free(DecisionVariables *vars) {
+// Free the memory allocated for the LPDecisionVars struct.
+void lp_decisionvars_free(LPDecisionVars *vars) {
     if (vars) {
         for (size_t i = 0; i < vars->length; i++) {
             free(vars->names[i]); // Free each name
@@ -41,7 +41,7 @@ void decision_vars_free(DecisionVariables *vars) {
 }
 
 // Set the name of a decision variable at the specified index.
-void decision_vars_set_var(DecisionVariables *vars, size_t index, const char *name) {
+void lp_decisionvars_set_var(LPDecisionVars *vars, size_t index, const char *name) {
     if (index >= 0 && index < vars->length) {
         free(vars->names[index]); // Free existing name if any
         vars->names[index] = strdup(name); // Duplicate the new name
@@ -49,7 +49,7 @@ void decision_vars_set_var(DecisionVariables *vars, size_t index, const char *na
 }
 
 // Get the name of a decision variable at the specified index.
-const char* decision_vars_get_var(DecisionVariables *vars, size_t index) {
+const char* lp_decisionvars_get_var(LPDecisionVars *vars, size_t index) {
     if (index >= 0 && index < vars->length) {
         return vars->names[index];
     }
@@ -57,7 +57,7 @@ const char* decision_vars_get_var(DecisionVariables *vars, size_t index) {
 }
 
 // Print names of decision variables for debugging purposes.
-void decision_vars_print(DecisionVariables *vars) {
+void lp_decisionvars_print(LPDecisionVars *vars) {
     printf("--- Decision Variables ---\n");
     for (int i = 0; i < vars->length; i++) {
         if (vars->names[i]) {

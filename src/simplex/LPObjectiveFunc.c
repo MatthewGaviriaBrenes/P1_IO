@@ -3,8 +3,8 @@
 #include "LPObjectiveFunc.h"
 
 
-// Create a new ObjectiveFunction struct with the given optimization type, number of decision variables, and coefficients.
-ObjectiveFunction *objective_function_create(enum ObjectiveFunctionType type, size_t num_dec_vars, Coefficients *coeffs) {
+// Create a new LPObjectiveFunc struct with the given optimization type, number of decision variables, and coefficients.
+LPObjectiveFunc *lp_objectivefunc_create(enum ObjectiveFunctionType type, size_t num_dec_vars, LPCoefficients *coeffs) {
     if (type < MAXIMIZE || type > MINIMIZE) {
         printf("Error: Invalid objective function type specified.\n");
         return NULL;
@@ -18,18 +18,18 @@ ObjectiveFunction *objective_function_create(enum ObjectiveFunctionType type, si
         return NULL;
     }
     if (coeffs->length != num_dec_vars) {
-        printf("Error: Coefficients length does not match the number of decision variables for objective function.\n");
+        printf("Error: LPCoefficients length does not match the number of decision variables for objective function.\n");
         return NULL;
     }
-    ObjectiveFunction *obj_func = (ObjectiveFunction *)malloc(sizeof(ObjectiveFunction));
+    LPObjectiveFunc *obj_func = (LPObjectiveFunc *)malloc(sizeof(LPObjectiveFunc));
     if (!obj_func) {
-        printf("Error: Memory allocation failed for ObjectiveFunction struct.\n");
+        printf("Error: Memory allocation failed for LPObjectiveFunc struct.\n");
         return NULL;
     }
 
-    obj_func->coeffs = coefficients_create(num_dec_vars);
+    obj_func->coeffs = lp_coefficients_create(num_dec_vars);
     if (!obj_func->coeffs) {
-        printf("Error: Memory allocation failed for coefficients in ObjectiveFunction struct.\n");
+        printf("Error: Memory allocation failed for coefficients in LPObjectiveFunc struct.\n");
         free(obj_func);
         return NULL;
     }
@@ -43,22 +43,22 @@ ObjectiveFunction *objective_function_create(enum ObjectiveFunctionType type, si
     return obj_func;
 }
 
-// Free the memory allocated for the ObjectiveFunction struct and its components.
-void objective_function_free(ObjectiveFunction *obj_func) {
+// Free the memory allocated for the LPObjectiveFunc struct and its components.
+void lp_objectivefunc_free(LPObjectiveFunc *obj_func) {
     if (obj_func) {
-        coefficients_free(obj_func->coeffs); // Free the Coefficients struct
-        free(obj_func); // Free the ObjectiveFunction struct itself
+        lp_coefficients_free(obj_func->coeffs); // Free the LPCoefficients struct
+        free(obj_func); // Free the LPObjectiveFunc struct itself
     }
 }
 
 // Print the details of the objective function for debugging purposes.
-void objective_function_print(const ObjectiveFunction *obj_func, const DecisionVariables *decision_vars) {
+void lp_objectivefunc_print(const LPObjectiveFunc *obj_func, const LPDecisionVars *decision_vars) {
     if (obj_func == NULL) {
-        printf("Error: ObjectiveFunction struct is NULL.\n");
+        printf("Error: LPObjectiveFunc struct is NULL.\n");
         return;
     }
     if (decision_vars && decision_vars->length != obj_func->coeffs->length) {
-        printf("Error: DecisionVariables count does not match the number of coefficients in the objective function.\n");
+        printf("Error: LPDecisionVars count does not match the number of coefficients in the objective function.\n");
         return;
     }
     printf("--- Objective Function ---\n");
@@ -75,6 +75,6 @@ void objective_function_print(const ObjectiveFunction *obj_func, const DecisionV
     }
     printf("Z = ");
     // Print the coefficients for the objective function
-    coefficients_print(obj_func->coeffs, decision_vars);
+    lp_coefficients_print(obj_func->coeffs, decision_vars);
     printf("\n\n");
 }

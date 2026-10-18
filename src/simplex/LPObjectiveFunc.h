@@ -14,18 +14,18 @@ enum ObjectiveFunctionType {
 typedef struct {
     enum ObjectiveFunctionType type;      // Type of the objective function (maximization or minimization)
     size_t num_dec_vars;                // Number of decision variables in the objective function
-    Coefficients *coeffs;      // Coefficients for the decision variables in the constraint
-} ObjectiveFunction;
+    LPCoefficients *coeffs;      // LPCoefficients for the decision variables in the constraint
+} LPObjectiveFunc;
 
-// Create a new ObjectiveFunction struct with the given optimization type, number of decision variables, and coefficients.
-ObjectiveFunction *objective_function_create(enum ObjectiveFunctionType type, size_t num_dec_vars, Coefficients *coeffs);
+// Create a new LPObjectiveFunc struct with the given optimization type, number of decision variables, and coefficients.
+LPObjectiveFunc *lp_objectivefunc_create(enum ObjectiveFunctionType type, size_t num_dec_vars, LPCoefficients *coeffs);
 
-// Free the memory allocated for the ObjectiveFunction struct and its components.
-void objective_function_free(ObjectiveFunction *obj_func);
+// Free the memory allocated for the LPObjectiveFunc struct and its components.
+void lp_objectivefunc_free(LPObjectiveFunc *obj_func);
 
 // Print the details of the objective function for debugging purposes.
 // DecisionVariable struct can be passed to display the coefficients alongside their corresponding variable names. If NULL, will print generic variable names.
-void objective_function_print(const ObjectiveFunction *obj_func, const DecisionVariables *decision_vars);
+void lp_objectivefunc_print(const LPObjectiveFunc *obj_func, const LPDecisionVars *decision_vars);
 
 
 #endif

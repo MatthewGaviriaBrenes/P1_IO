@@ -4,8 +4,8 @@
 
 // Create a new CoefficientsSet struct with the given length and allocate memory for the coefficients array.
 // Initializes the coefficients array to zero.
-Coefficients *coefficients_create(size_t length) {
-    Coefficients *set = (Coefficients *)malloc(sizeof(Coefficients));
+LPCoefficients *lp_coefficients_create(size_t length) {
+    LPCoefficients *set = (LPCoefficients *)malloc(sizeof(LPCoefficients));
     if (!set) {
         return NULL;
     }
@@ -16,7 +16,7 @@ Coefficients *coefficients_create(size_t length) {
         return NULL;
     }
     
-    set = (Coefficients *)malloc(sizeof(Coefficients));
+    set = (LPCoefficients *)malloc(sizeof(LPCoefficients));
     if (!set) {
         return NULL;
     }
@@ -33,18 +33,18 @@ Coefficients *coefficients_create(size_t length) {
 
 // Free the memory allocated for the coefficients array and resets the length to 0.
 // Use to delete the coefficient set when it is no longer needed to prevent memory leaks.
-void coefficients_free(Coefficients *set) {
+void lp_coefficients_free(LPCoefficients *set) {
     if (set) {
         free(set->coefficients);
         free(set);
     }
 }
 
-// Create a new Coefficients struct with the given length and copy the provided coefficients into the new struct.
+// Create a new LPCoefficients struct with the given length and copy the provided coefficients into the new struct.
 // Caller is responsible for freeing the coefficients array in the returned CoefficientsSet when done using it.
-Coefficients *coefficients_create_from_array(size_t length, const double *coefficients) {
+LPCoefficients *lp_coefficients_create_from_array(size_t length, const double *coefficients) {
     if (coefficients == NULL) {
-        printf("Error: Coefficients array is NULL.\n");
+        printf("Error: LPCoefficients array is NULL.\n");
         return NULL;
     }
     if (length < MINIMUM_DECISION_VARS || length > MAXIMUM_DECISION_VARS) {
@@ -52,16 +52,16 @@ Coefficients *coefficients_create_from_array(size_t length, const double *coeffi
         return NULL;
     }
 
-    Coefficients *set = (Coefficients *)malloc(sizeof(Coefficients));
+    LPCoefficients *set = (LPCoefficients *)malloc(sizeof(LPCoefficients));
     if (!set) {
-        printf("Error: Memory allocation failed for Coefficients struct.\n");
+        printf("Error: Memory allocation failed for LPCoefficients struct.\n");
         return NULL;
     }
     set->length = length;
     set->coefficients = (double *)malloc(length * sizeof(double));
     
     if (!set->coefficients) {
-        printf("Error: Memory allocation failed for array of coefficients for Coefficients struct.\n");
+        printf("Error: Memory allocation failed for array of coefficients for LPCoefficients struct.\n");
         free(set);
         return NULL;
     }
@@ -72,16 +72,16 @@ Coefficients *coefficients_create_from_array(size_t length, const double *coeffi
     return set;
 }
 
-// Print the coefficients in the Coefficients struct for debugging purposes.
+// Print the coefficients in the LPCoefficients struct for debugging purposes.
 // DecisionVariable struct can be passed to display the coefficients alongside their corresponding variable names. If NULL, will print generic variable names.
 // Does not add line break. Caller should print a line break afterwards if necessary.
-void coefficients_print(const Coefficients *set, const DecisionVariables *decision_vars) {
+void lp_coefficients_print(const LPCoefficients *set, const LPDecisionVars *decision_vars) {
     if (set == NULL) {
-        printf("Error: Coefficients struct is NULL.\n");
+        printf("Error: LPCoefficients struct is NULL.\n");
         return;
     }
     if (decision_vars && decision_vars->length != set->length) {
-        printf("Error: DecisionVariables count does not match the number of coefficients in the Coefficients struct.\n");
+        printf("Error: LPDecisionVars count does not match the number of coefficients in the LPCoefficients struct.\n");
         return;
     }
 
@@ -102,11 +102,11 @@ void coefficients_print(const Coefficients *set, const DecisionVariables *decisi
                 continue;   // Do not print zero coefficients if a non-zero coefficient has not been printed yet.
             }
         }
-        // Add the decision variable name from the DecisionVariables struct if provided, otherwise use a generic variable name.
+        // Add the decision variable name from the LPDecisionVars struct if provided, otherwise use a generic variable name.
         if (decision_vars && decision_vars->names[i]) {
             printf(" * %s ", decision_vars->names[i]);
         } else {
-            printf(" * x%zu ", i + 1); // Generic variable name if DecisionVariables struct is NULL or name is not set.
+            printf(" * x%zu ", i + 1); // Generic variable name if LPDecisionVars struct is NULL or name is not set.
         }
     }
 }

@@ -6,20 +6,20 @@
 // This function initializes the LPDefinition struct with default values and allocates memory for its components.
 // Objective function and constraints will be set to NULL initially, and should be set later using appropriate setter functions.
 LPDefinition *lp_definition_create(
-    DecisionVariables *decision_vars, 
-    ObjectiveFunction *objective_func, 
-    Constraints *constraints
+    LPDecisionVars *decision_vars, 
+    LPObjectiveFunc *objective_func, 
+    LPConstraints *constraints
 ) {
     if (decision_vars == NULL) {
-        printf("Error: DecisionVariables struct is NULL.\n");
+        printf("Error: LPDecisionVars struct is NULL.\n");
         return NULL;
     }
     if (objective_func == NULL) {
-        printf("Error: ObjectiveFunction struct is NULL.\n");
+        printf("Error: LPObjectiveFunc struct is NULL.\n");
         return NULL;
     }
     if (constraints == NULL) {
-        printf("Error: Constraints struct is NULL.\n");
+        printf("Error: LPConstraints struct is NULL.\n");
         return NULL;
     }
 
@@ -27,7 +27,7 @@ LPDefinition *lp_definition_create(
     if (decision_vars->length != objective_func->num_dec_vars || 
         decision_vars->length != constraints->num_dec_vars) {
         printf("Error: Number of decision variables used for objective function and/or constraints does not match.\n");
-        printf("Expected: %zu, Objective Function: %zu, Constraints: %zu\n", 
+        printf("Expected: %zu, Objective Function: %zu, LPConstraints: %zu\n", 
             decision_vars->length, objective_func->num_dec_vars, constraints->num_dec_vars);
         return NULL;
     }
@@ -65,26 +65,26 @@ void lp_definition_print(const LPDefinition *lp_def) {
 
     printf("--- LP Definition ---\n");
     printf("Number of Decision Variables: %zu\n", lp_def->num_decision_vars);
-    printf("Number of Constraints: %zu\n", lp_def->num_constraints);
+    printf("Number of LPConstraints: %zu\n", lp_def->num_constraints);
 
     // Print decision variables
     if (lp_def->decision_variables) {
-        decision_vars_print(lp_def->decision_variables);
+        lp_decisionvars_print(lp_def->decision_variables);
     } else {
-        printf("Warning: DecisionVariables struct is NULL.\n");
+        printf("Warning: LPDecisionVars struct is NULL.\n");
     }
 
     // Print objective function
     if (lp_def->objective_function) {
-        objective_function_print(lp_def->objective_function, lp_def->decision_variables);
+        lp_objectivefunc_print(lp_def->objective_function, lp_def->decision_variables);
     } else {
-        printf("Warning: ObjectiveFunction struct is NULL.\n");
+        printf("Warning: LPObjectiveFunc struct is NULL.\n");
     }
 
     // Print constraints
     if (lp_def->constraints) {
         constrainst_print_all_constraints(lp_def->constraints, lp_def->decision_variables);
     } else {
-        printf("Warning: Constraints struct is NULL.\n");
+        printf("Warning: LPConstraints struct is NULL.\n");
     }
 }
