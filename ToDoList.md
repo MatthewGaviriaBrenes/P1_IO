@@ -32,15 +32,22 @@ Slack variables and other non-decision variables can be inferred by type of LP c
 * [X] - Check if column is in base.
 * [X] - Get list of variables in base by column indices.
 
-### Simplex Tableau - Solver Functionality
-* [ ] - Check if issue is solved (no new variables can enter BFS).
-* [ ] - Get column index of variable that enter BFS.
-* [ ] - Calculate minimum-ratio values.
-* [ ] - Handle unbounded problem.
-* [ ] - Get row index of variable that exits BFS (and set pivot).
-* [ ] - Normalize pivot row (multiply/divide pivot row's coefficients to get 1 in pivot cell)
-* [ ] - Zeroing of pivot column (add/subtract pivot row's coefficients into other rows' coefficients to get zero coefficients in pivot column except pivot cell.)
-* [ ] - >>> TO BE UPDATED...
+### Simplex Tableau - Solver Functionality (Basic)
+* [X] - Check if issue is solved (no new variables can enter BFS).
+* [X] - Get column index of variable that enter BFS.
+* [X] - Calculate minimum-ratio values.
+* [X] - Handle unbounded problem.
+* [X] - Get row index of variable that exits BFS (and set pivot).
+* [X] - Normalize pivot row (multiply/divide pivot row's coefficients to get 1 in pivot cell)
+* [X] - Zeroing of pivot column (add/subtract pivot row's coefficients into other rows' coefficients to get zero coefficients in pivot column except pivot cell.)
+* [ ] - Testing of Simplex tableau solver with basic solution functionality.
+* [ ] - Printing Simplex Tableau solver's info on-screen for testing purposes and draft for integration with GUI.
+
+### Simplex Tableau - Solver Functionality (Advanced)
+* [ ] - Handle degenerated problems.
+* [ ] - Handle multiple solutions in Simplex tableau.
+* [ ] - Implement mechanism to search solutions between two solutions (calculated from multi-solution Simplex tableau). Consider new data entity (e.g. SPMultiSolutCalculator).
+
 
 ## GUI (GTK + Glade)
 * [ ] - Main window.
