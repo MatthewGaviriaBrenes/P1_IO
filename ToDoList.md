@@ -13,30 +13,27 @@ This will be used for guidance on what needs to be implemented.
 
 NOTES: 
 Data Structure for LP is meant to represent the base mathematical models for LP problems.
-TBD: 
-* Whether to include slack variables in LP definitions (e.g. LPConstraints).
-* Or use the LPConstraints struct's array for constraint types to infer slack variables and their indices.
+Slack variables and other non-decision variables can be inferred by type of LP constraint (<=, =, >=).
 
 ### Data structures for Simplex tableau
-* [ ] - Slack variables for constraints (where applicable)
-* [ ] - Simplex tableau baseline
-* [ ] - Simplex tableau matrix
-* [ ] - Reserve indices for objective row (row 0), objective var (col 0) and RHS (added last col)
-* [ ] - Flag for degenerated problem
-* [ ] - Flag for unbound problem
+* [X] - Slack variables for constraints (where applicable)
+* [X] - Simplex tableau baseline
+* [X] - Simplex tableau matrix
+* [X] - Reserve indices for objective row (row 0), objective var (col 0) and RHS (added last col)
+* [X] - Flag for degenerated problem
+* [X] - Flag for unbound problem
 
 ### Simplex Tableau - Indexed access
-* [ ] - Handle indexed access for constraints (rows) and variables (columns).
-* [ ] - Handle indexed access for decision vars and slack vars.
-* [ ] - Check if variable is in BFS.
-* [ ] - Get indices of variables in BFS. (May include 0 for Z).
-* [ ] - Get value of var in BFS.
-* [ ] - Check if column is identity.
-* [ ] - Get position of identity cell (i.e. cell with 1) for variable column in BFS.
-* [ ] - Check if issue is solved (no new variables can enter BFS).
+* [X] - Handle indexed access for constraints (rows) and variables (columns).
+* [X] - Handle indexed access for decision vars and slack vars.
+* [X] - Check if variable is in BFS.
+* [X] - Get indices of variables in BFS. (May include 0 for Z).
+* [X] - Get value of var in BFS.
+* [X] - Check if column is in base.
+* [X] - Get list of variables in base by column indices.
 
 ### Simplex Tableau - Solver Functionality
-* [ ] - Check if issue is solved (no new variables can enter BFS)
+* [ ] - Check if issue is solved (no new variables can enter BFS).
 * [ ] - Get column index of variable that enter BFS.
 * [ ] - Calculate minimum-ratio values.
 * [ ] - Handle unbounded problem.
