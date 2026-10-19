@@ -6,7 +6,8 @@ SRC = src/main.c \
 	  src/simplex/LPCoefficients.c \
 	  src/simplex/LPObjectiveFunc.c \
 	  src/simplex/LPConstraints.c \
-	  src/simplex/LPDefinition.c
+	  src/simplex/LPDefinition.c \
+	  src/simplex/SPTableau.c
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)

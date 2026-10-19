@@ -1,6 +1,7 @@
 // main.c
 
 #include "simplex/LPDefinition.h"
+#include "simplex/SPTableau.h"
 
 //  Testing function to validate the LPDefinition struct and its components.
 void test_lp_defintion() {
