@@ -1,6 +1,7 @@
 // SPTableau.h
 
 #include "LPDefinition.h"
+#include "SPBFS.h"
 
 #ifndef SPTABLEAU_H
 #define SPTABLEAU_H
@@ -9,16 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// SPBaseVariableInfo struct
-// Struct to represent information about a base variable (decision variable or slack variable) in the simplex tableau.
-// Surplus and artificial variables are not considered base variables (may review this for v2).
-// To be used when outputting information about a base variable in the tableau (e.g. Getting optimal solution).
-typedef struct {
-    size_t decision_var_index; // Index of the decision variable in the tableau
-    size_t slack_var_index;   // Index of the slack variable in the tableau
-    double value; // Coefficient of the variable in the constraint
-} SPBaseVarInfo;
-
+// Struct for Simplex Tableau (SPTableau) information.
 typedef struct {
     LPDefinition *lp_def; // Pointer to the definition of the linear programming problem (LPDefinition struct) for the Simplex Tableau.
     double **tableau; // 2D array representing the Simplex tableau. Will be initialized by constructor funciton.
@@ -59,6 +51,11 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt);
 // Caller must ensure that the LPDefinition struct is freed separately if it was dynamically allocated.
 void sp_tableau_free(SPTableau *spt);
 
+// Get the current BFS (Base Feasible Solution) from the tableau.
+// Returns a pointer to the created SPBFS struct. 
+// Caller is responsible for freeing the memory allocated for the SPBFS struct after use.
+SPBFS *sp_tableau_get_bfs(const SPTableau *spt);
+
 // Returns a snapshot of the tableau's current state as a 2D array of doubles.
 // To be used if intermediate tableau states need to be displayed.
 // Caller is responsible for freeing the memory allocated for the snapshot after use.
@@ -87,11 +84,6 @@ size_t *sp_tableau_get_base_vars_indices(const SPTableau *spt);
 // Return -1 if the variable is not a base variable or if the tableau is NULL. Otherwise, return the value of the base variable.
 double sp_tableau_get_base_var_value(const SPTableau *spt, size_t var_index);
 
-// Get the values of the variables in the tableau that are currently in the basis (i.e., basic variables).
-// Returns a dynamically allocated array of SPBaseVarInfo structs containing the indices and values of the base variables.
-// Caller is responsible for freeing the memory allocated for the array after use.
-SPBaseVarInfo *sp_tableau_get_base_vars_info(const SPTableau *spt);
-
 // Get the current value of Z in the tableau (row 0, column 0).
 double sp_tableau_get_z_value(const SPTableau *spt);
 
@@ -117,15 +109,22 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
 // Must be called after sp_tableau_canonize_pivot_row. 
 void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, size_t pivot_col_index);
 
+// Validate the base variables in the tableau to ensure they are all positive.
+bool sp_tableau_validate_positive_base_vars(const SPTableau *spt);
+
 // Perform a single step of the simplex algorithm on the tableau.
 void sp_tableau_solve_step(SPTableau *spt);
+
+// Print the current state of the tableau to the console for debugging and visualization purposes.
+void sp_tableau_print_tableau(const SPTableau *spt);
+
+// Print the current state of the BFS (Base Feasible Solution) for the provided SPTableau.
+// Name of decision variables are included in the output if included in the SPT's LP definition.
+void sp_tableau_print_bfs(const SPTableau *spt, const SPBFS *bfs);
 
 
 //TODO: List of functions to add later...
 /* 
-- Function to perform pivot operation on the tableau given a pivot row and pivot column.
-- Function to check for optimality of the current tableau state.
-- Function to extract the optimal solution from the tableau once optimality is reached.
 - TBD...
 */
 

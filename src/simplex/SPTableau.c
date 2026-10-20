@@ -202,6 +202,35 @@ void sp_tableau_free(SPTableau *spt) {
     free(spt);
 }
 
+// Get the current BFS (Base Feasible Solution) from the tableau.
+// Returns a pointer to the created SPBFS struct.
+// Caller is responsible for freeing the memory allocated for the SPBFS struct after use.
+SPBFS *sp_tableau_get_bfs(const SPTableau *spt) {
+    if (spt == NULL || spt->tableau == NULL) {
+        printf("Error: Tableau or its data is NULL.\n");
+        return NULL;
+    }
+
+    SPBFS *bfs = sp_bfs_create(spt->num_decision_vars, spt->num_slack_vars);
+    if (!bfs) {
+        printf("Error: Failed to create BFS from tableau.\n");
+        return NULL;
+    }
+
+    // Populate the BFS struct with the current values from the tableau
+    bfs->var_in_bfs[0] = true; // Z is always in the BFS
+    bfs->var_values[0] = spt->tableau[0][spt->num_cols - 1]; // Z value from tableau
+
+    size_t num_base_vars = 1 + spt->num_decision_vars + spt->num_slack_vars; // Total variables in BFS: Z + decision vars + slack vars
+
+    for (size_t col = 1; col < num_base_vars - 1; col++) { // Exclude Z column (0) and RHS column (last)
+        bfs->var_in_bfs[col] = sp_tableau_is_base_column(spt, col); // Mark if the variable is in the BFS
+        bfs->var_values[col] = bfs->var_in_bfs[col] ? sp_tableau_get_base_var_value(spt, col) : 0.0; // If not a base variable, set value to 0.0
+    }
+
+    return bfs;
+}
+
 // Returns a snapshot of the tableau's current state as a 2D array of doubles.
 // To be used if intermediate tableau states need to be displayed.
 // Caller is responsible for freeing the memory allocated for the snapshot after use.
@@ -349,59 +378,6 @@ double sp_tableau_get_base_var_value(const SPTableau *spt, size_t var_index) {
     return -1.0; // Should not reach here if the variable is a base variable
 }
 
-
-// Get the values of the variables in the tableau that are currently in the basis (i.e., basic variables).
-// Returns a dynamically allocated array of SPBaseVarInfo structs containing the indices and values of the base variables.
-// Caller is responsible for freeing the memory allocated for the array after use.
-SPBaseVarInfo *sp_tableau_get_base_vars_info(const SPTableau *spt) {
-    if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
-        return NULL;
-    }
-
-    // Return NULL if there are no base variables in the tableau (somehow) or cannot allocate memory to get their indices.
-    size_t base_variable_count = sp_tableau_get_base_vars_count(spt);
-    if (base_variable_count == 0) {
-        printf("Warning: No base variables found in the tableau.\n");
-        return NULL;
-    }
-    size_t *base_var_indices = sp_tableau_get_base_vars_indices(spt);
-    if (base_var_indices == NULL) {
-        printf("Error: Failed to retrieve base variable indices.\n");
-        return NULL;
-    }
-
-    // Allocate memory for the array of SPBaseVarInfo structs to hold the base variable indices and their corresponding values.
-    SPBaseVarInfo *base_vars_info = malloc(base_variable_count * sizeof(SPBaseVarInfo));
-    if (!base_vars_info) {
-        printf("Error: Memory allocation failed for base variable info array.\n");
-        free(base_var_indices);
-        return NULL;
-    }
-
-    // Populate the array of SPBaseVarInfo structs with the indices and values of the base variables.
-    for (size_t i = 0; i < base_variable_count; i++) {
-        size_t base_var_index = base_var_indices[i];
-        double base_var_value = sp_tableau_get_base_var_value(spt, base_var_index);
-        if (base_var_value < 0) {
-            printf("Error: Failed to retrieve value for base variable at index %zu.\n", base_var_index);
-            free(base_var_indices);
-            free(base_vars_info);
-            return NULL;
-        }
-
-        base_vars_info[i].value = base_var_value;
-
-        // Get the proper index for the base variable based on its type (decision, slack, surplus, or artificial) and store it in the SPBaseVarInfo struct.
-        if (base_var_index <= spt->num_decision_vars) {
-            base_vars_info[i].decision_var_index = base_var_index; // Adjust for tableau indexing (decision vars start at col. 1)
-        } else if (base_var_index <= (spt->num_decision_vars + spt->num_slack_vars)) {
-            base_vars_info[i].slack_var_index = (base_var_index - spt->num_decision_vars); // Adjust for tableau indexing (slack vars start after decision vars)
-        }
-        // Surplus and artificial variables can be handled similarly if needed for v2.
-    }
-}
-
 // Get the current value of Z in the tableau (row 0, column 0).
 double sp_tableau_get_z_value(const SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
@@ -426,9 +402,12 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
 
     for (size_t j = 1; j < spt->num_cols - 1; j++) { // Exclude Z column (0) and RHS column (last)
         double value = spt->tableau[0][j];
-        // If the coefficient is zero and no other pivot column has been found yet, consider it as a potential pivot column for multiple solutions.
+        // If the coefficient is zero and no other pivot column has been found yet, 
+        // consider it as a potential pivot column for multiple solutions unless it is already in the base.
         if (value == 0.0 && pivot_col_index == 0) {
-            pivot_col_index = j; // Potential pivot column for multiple solutions
+            if (!sp_tableau_is_base_column(spt, j)) {
+                pivot_col_index = j; 
+            }
         }
         // Maximization: Look for the most negative coefficient in the objective function row (row 0).
         else if (spt->lp_def->objective_function->type == MAXIMIZE) {
@@ -491,7 +470,7 @@ size_t sp_tableau_get_pivot_row(const SPTableau *spt, size_t pivot_col_index, do
         return SIZE_MAX;
     }
     // Ensure that the pivot column index is within the valid range (no Z or RHS columns).
-    if (pivot_col_index > 1 || pivot_col_index >= spt->num_cols - 1) {
+    if (pivot_col_index < 1 || pivot_col_index >= spt->num_cols - 1) {
         printf("Error: Pivot column index out of bounds when getting pivot row.\n");
         return SIZE_MAX;
     }
@@ -522,16 +501,17 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
         printf("Error: Pivot row or column index out of bounds when normalizing pivot row.\n");
         return;
     }
-
     double pivot_value = spt->tableau[pivot_row_index][pivot_col_index];
     if (pivot_value == 0.0) {
         printf("Error: Pivot value is zero, cannot normalize pivot row.\n");
         return;
     }
+    if (pivot_value == 1.0) {
+        return; // Already canonized, no need to normalize again.
+    }
 
     // Get normalization factor to ensure a pivot value of 1 in the pivot cell
     double normalization_factor = 1.0 / pivot_value;
-
     // Normalize the pivot row by dividing each element in the row by the pivot value
     for (size_t pcol = 1; pcol < spt->num_cols; pcol++) {
         spt->tableau[pivot_row_index][pcol] *= normalization_factor;
@@ -545,17 +525,20 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
         printf("Error: Tableau or its data is NULL.\n");
         return;
     }
-    if (pivot_row_index <= 1 || pivot_row_index >= spt->num_rows) {
+    if (pivot_row_index < 1 || pivot_row_index >= spt->num_rows) {
         printf("Error: Pivot row index out of bounds when normalizing non-pivot rows.\n");
         return;
     }
-    if (pivot_col_index <= 1 || pivot_col_index >= spt->num_cols - 1) {
+    if (pivot_col_index < 1 || pivot_col_index >= spt->num_cols - 1) {
         printf("Error: Pivot column index out of bounds when normalizing non-pivot rows.\n");
         return;
     }
 
     // Normalize each non-pivot row to ensure that all other entries in the pivot column are zero.
     for (size_t np_row = 0; np_row < spt->num_rows; np_row++) {
+        if (np_row == pivot_row_index) {
+            continue;   // Skip the pivot row
+        }
         // If pivot column value in non-pivot row is zero, skip the row (already canonized).
         if (spt->tableau[np_row][pivot_col_index] == 0) {
             continue;
@@ -570,6 +553,19 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
             spt->tableau[np_row][np_col] += eliminiation_factor * spt->tableau[pivot_row_index][np_col];
         }
     }
+}
+
+// Validate the base variables in the tableau to ensure they are all positive.
+bool sp_tableau_validate_positive_base_vars(const SPTableau *spt) {
+    if (spt == NULL || spt->tableau == NULL) {
+        printf("Error: Tableau or its data is NULL.\n");
+        return false;
+    }
+
+    double base_var_value;
+
+    
+    return true; // All base variables are positive
 }
 
 // Perform a single step of the simplex algorithm on the tableau.
@@ -612,4 +608,94 @@ void sp_tableau_solve_step(SPTableau *spt) {
     // Step 4 - Canonize the non-pivot rows to ensure that all other entries in the pivot column are zero.
     sp_tableau_canonize_nonpivot_rows(spt, pivot_row_index, pivot_col_index);
 
+}
+
+// Print the current state of the tableau to the console for debugging and visualization purposes.
+void sp_tableau_print_tableau(const SPTableau *spt) {
+    if (spt == NULL || spt->tableau == NULL) {
+        printf("Error: Tableau or its data is NULL.\n");
+        return;
+    }
+
+    size_t slack_var_count = 1;
+    size_t surplus_var_count = 1;
+    size_t artificial_var_count = 1;
+
+    printf("Current Tableau State:\n");
+    // Printing column headers
+    printf("Z\t");
+    for (size_t var_index = 1; var_index < spt->num_cols - 1; var_index++) {
+        // Printing decision variable names (first four characters)
+        if (var_index <= spt->num_decision_vars) {
+            // Get the name of the decision variable and truncate it to the first four characters
+            char *short_var_name = strndup(spt->lp_def->decision_variables->names[var_index - 1], 4); // Get first four characters of the variable name
+            printf("%s\t", short_var_name);
+            free(short_var_name);
+        }
+        // Printing slack variable names (s1, s2, s3, ...)
+        else if (var_index <= spt->num_decision_vars + spt->num_slack_vars) {
+            printf("s%zu\t", slack_var_count++);
+        }
+        // Print surplus variable names (e.g., e1, e2, e3, ...) for v2 if needed
+        else if (var_index <= spt->num_decision_vars + spt->num_slack_vars + spt->num_surplus_vars) {
+            printf("e%zu\t", surplus_var_count++);
+        }
+        // Print artificial variable names (e.g., a1, a2, a3, ...) for v2 if needed
+        else {
+            printf("a%zu\t", artificial_var_count++);
+        }
+    }
+    printf("RHS\n");
+
+    // Printing values
+    for (size_t row = 0; row < spt->num_rows; row++) {
+        for (size_t col = 0; col < spt->num_cols; col++) {
+            // Format value output as integer if it is a whole number, otherwise print with 4 decimal places
+            if (spt->tableau[row][col] == (int)spt->tableau[row][col]) {
+                printf("%d", (int)spt->tableau[row][col]);
+            } else {
+                printf("%0.4f", spt->tableau[row][col]);
+            }
+            // Add tab spacing between columns, except for the last column
+            if (col < spt->num_cols - 1) {
+                printf("\t");
+            }
+        }
+        printf("\n");
+    }
+}
+
+// Print the current state of the BFS (Base Feasible Solution) for the provided SPTableau.
+// Name of decision variables are included in the output if included in the SPT's LP definition.
+void sp_tableau_print_bfs(const SPTableau *spt, const SPBFS *bfs) {
+    if (spt == NULL || bfs == NULL) {
+        printf("Error: Tableau or BFS is NULL.\n");
+        return;
+    }
+    if (!spt->lp_def) {
+        printf("Error: LP definition or decision variables are NULL.\n");
+        return;
+    }
+    if (spt->num_decision_vars != bfs->num_decision_vars || spt->num_slack_vars != bfs->num_slack_vars) {
+        printf("Error: Mismatch between tableau and BFS variable counts.\n");
+        return;
+    }
+
+    printf("Current BFS State:\n");
+    printf("Variable\tValue\n");
+
+    size_t total_bfs_vars = bfs->num_decision_vars + bfs->num_slack_vars + 1; // +1 for Z value
+
+    for (size_t bfs_var = 0; bfs_var < total_bfs_vars; bfs_var++) {
+        if (bfs_var == 0) {
+            printf("Z\t\t%0.4f\n", bfs->var_values[bfs_var]);
+        } else if (!bfs->var_in_bfs[bfs_var]) {
+            continue; // Skip non-basic variables
+        } else if (bfs_var <= bfs->num_decision_vars) {
+            // bfs_var - 1 is used to index into the decision variable names array, as bfs_var starts from 1 for decision variables.
+            printf("%s\t\t%0.4f\n", spt->lp_def->decision_variables->names[bfs_var - 1], bfs->var_values[bfs_var]);
+        } else if (bfs_var <= bfs->num_decision_vars + bfs->num_slack_vars) {
+            printf("s%zu\t\t%0.4f\n", (bfs_var - bfs->num_decision_vars), bfs->var_values[bfs_var]);
+        }
+    }
 }
