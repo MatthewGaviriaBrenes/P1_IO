@@ -56,6 +56,10 @@ void sp_tableau_free(SPTableau *spt);
 // Caller is responsible for freeing the memory allocated for the SPBFS struct after use.
 SPBFS *sp_tableau_get_bfs(const SPTableau *spt);
 
+// Validate a provided BFS against the tableau's constraints.
+// Does not confirm optimal solution.
+bool sp_tableau_validate_bfs(const SPTableau *spt, const SPBFS *bfs);
+
 // Returns a snapshot of the tableau's current state as a 2D array of doubles.
 // To be used if intermediate tableau states need to be displayed.
 // Caller is responsible for freeing the memory allocated for the snapshot after use.
@@ -108,9 +112,6 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
 // Canonize the non-pivot rows to ensure that all other entries in the pivot column are zero.
 // Must be called after sp_tableau_canonize_pivot_row. 
 void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, size_t pivot_col_index);
-
-// Validate the base variables in the tableau to ensure they are all positive.
-bool sp_tableau_validate_positive_base_vars(const SPTableau *spt);
 
 // Perform a single step of the simplex algorithm on the tableau.
 void sp_tableau_solve_step(SPTableau *spt);

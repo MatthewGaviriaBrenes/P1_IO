@@ -29,8 +29,12 @@ size_t sp_bfs_get_num_decision_vars(const SPBFS *bfs);
 // Get the number of slack variables in the BFS.
 size_t sp_bfs_get_num_slack_vars(const SPBFS *bfs);
 
-// Get the number of variables in the BFS (Z + decision vars + slack vars).
+// Get the total number of variables in the SPBFS struct (Z + decision vars + slack vars).
+// Useful for functions iterating through the struct's arrays.
 size_t sp_bfs_get_num_all_vars(const SPBFS *bfs);
+
+// Get the number of variables that are in the BFS.
+size_t sp_bfs_get_num_vars_in_base(const SPBFS *bfs);
 
 // Check if the specified variable (by tableau index) is in the BFS.
 bool sp_bfs_is_var_in_bfs(const SPBFS *bfs, size_t var_index);

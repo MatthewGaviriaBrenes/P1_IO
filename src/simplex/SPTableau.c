@@ -217,18 +217,82 @@ SPBFS *sp_tableau_get_bfs(const SPTableau *spt) {
         return NULL;
     }
 
-    // Populate the BFS struct with the current values from the tableau
+    // Add the Z value from the tableau to the BFS struct at index 0.
     bfs->var_in_bfs[0] = true; // Z is always in the BFS
-    bfs->var_values[0] = spt->tableau[0][spt->num_cols - 1]; // Z value from tableau
+    bfs->var_values[0] = spt->tableau[0][spt->num_cols - 1]; 
 
-    size_t num_base_vars = 1 + spt->num_decision_vars + spt->num_slack_vars; // Total variables in BFS: Z + decision vars + slack vars
+    // Add the values of the decision and slack variables from the tableau to the BFS struct.
+    size_t num_bfs_vars = 1 + spt->num_decision_vars + spt->num_slack_vars; 
 
-    for (size_t col = 1; col < num_base_vars - 1; col++) { // Exclude Z column (0) and RHS column (last)
-        bfs->var_in_bfs[col] = sp_tableau_is_base_column(spt, col); // Mark if the variable is in the BFS
+    for (size_t col = 1; col < num_bfs_vars - 1; col++) { 
+        bfs->var_in_bfs[col] = sp_tableau_is_base_column(spt, col);     // Mark if the variable is in the BFS
         bfs->var_values[col] = bfs->var_in_bfs[col] ? sp_tableau_get_base_var_value(spt, col) : 0.0; // If not a base variable, set value to 0.0
     }
-
     return bfs;
+}
+
+// Validate a provided BFS against the tableau's constraints.
+// Does not confirm optimal solution.
+bool sp_tableau_validate_bfs(const SPTableau *spt, const SPBFS *bfs) {
+    if (spt == NULL || spt->tableau == NULL || bfs == NULL) {
+        printf("Error: Tableau or its data or BFS is NULL.\n");
+        return false;
+    }
+
+    // 1 - BFS variable counts must match the tableau's variable counts.
+    if (bfs->num_decision_vars != spt->num_decision_vars 
+        || bfs->num_slack_vars != spt->num_slack_vars) {
+        printf("Error: BFS variable counts do not match tableau's variable counts.\n");
+        return false;
+    }
+
+    // 2 - Value of all decision variables in the BFS must be non-negative.
+    for (size_t col = 1; col <= spt->num_decision_vars; col++) {
+        if (bfs->var_in_bfs[col] && bfs->var_values[col] < 0.0) {
+            printf("Error: Decision variable at index %zu in BFS is negative.\n", col);
+            return false;
+        }
+    }
+
+    // 3 - Validate all constraints are satisfied by the BFS.
+
+    LPConstraints *constraints = spt->lp_def->constraints;
+
+    // Loop to validate each constraint against the BFS value. 
+    // Constraint index (ci).
+    for (size_t ci = 0; ci < spt->num_constraints; ci++) {
+        // Evaluate the variables in the BFS against the constraint's coefficients and RHS value.
+        double evaluated_result = 0.0;
+        LPCoefficients *constraint_coeffs = constraints->coeff_sets[ci];
+        // Loop through each decision variable in the BFS to evaluate the constraint.
+        for (size_t j = 0; j < spt->num_decision_vars; j++) {
+            if (bfs->var_in_bfs[1 + j]) { // Check if the decision variable is in the BFS
+                evaluated_result += bfs->var_values[1 + j] * constraint_coeffs->coefficients[j];
+            }
+        }
+
+        // Compared evaluated value against the constraint's RHS value based on the constraint type (LE, GE, EQ).
+        bool valid = false;
+        switch (constraints->types[ci]) {
+            case LE:
+                valid = evaluated_result <= constraints->rhs_values[ci];
+                break;
+            case GE:
+                valid = evaluated_result >= constraints->rhs_values[ci];
+                break;
+            case EQ:
+                valid = evaluated_result == constraints->rhs_values[ci];
+                break;
+            default:
+                printf("Error: Unknown constraint type encountered during BFS validation.\n");
+                return false;
+        }
+        if (!valid) {
+            printf("Error: Constraint %zu is not satisfied.\n", ci);
+            return false;
+        }
+    }
+    return true;
 }
 
 // Returns a snapshot of the tableau's current state as a 2D array of doubles.
@@ -307,48 +371,6 @@ bool sp_tableau_is_base_variable(const SPTableau *spt, size_t var_index) {
     }
     // A base variable corresponds to a base column in the tableau.
     return sp_tableau_is_base_column(spt, var_index);
-}
-
-// Count the number of base variables in the tableau.
-// Returns the count of base variables in the tableau.
-size_t sp_tableau_get_base_vars_count(const SPTableau *spt) {
-    if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
-        return 0;
-    }
-
-    size_t base_variable_count = 0;
-    for (size_t j = 1; j < spt->num_cols - 1; j++) { // Exclude Z column (0) and RHS column (last)
-        if (sp_tableau_is_base_column(spt, j)) {
-            base_variable_count++;
-        }
-    }
-    return base_variable_count;
-}
-
-// Get the indices of the base variables in the tableau.
-// Returns a dynamically allocated array of size_t containing the indices of the base variables.
-// Caller is responsible for freeing the memory allocated for the array after use.
-size_t *sp_tableau_get_base_vars_indices(const SPTableau *spt) {
-    if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
-        return NULL;
-    }
-
-    size_t base_variable_count = sp_tableau_get_base_vars_count(spt);
-    size_t *base_var_indices = malloc(base_variable_count * sizeof(size_t));
-    if (!base_var_indices) {
-        printf("Error: Memory allocation failed for base variable indices array.\n");
-        return NULL;
-    }
-
-    size_t index = 0;
-    for (size_t j = 1; j < spt->num_cols - 1; j++) { // Exclude Z column (0) and RHS column (last)
-        if (sp_tableau_is_base_column(spt, j)) {
-            base_var_indices[index++] = j;
-        }
-    }
-    return base_var_indices;
 }
 
 // Get the value of a base variable.
@@ -555,19 +577,6 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
     }
 }
 
-// Validate the base variables in the tableau to ensure they are all positive.
-bool sp_tableau_validate_positive_base_vars(const SPTableau *spt) {
-    if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
-        return false;
-    }
-
-    double base_var_value;
-
-    
-    return true; // All base variables are positive
-}
-
 // Perform a single step of the simplex algorithm on the tableau.
 void sp_tableau_solve_step(SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
@@ -685,6 +694,7 @@ void sp_tableau_print_bfs(const SPTableau *spt, const SPBFS *bfs) {
     printf("Variable\tValue\n");
 
     size_t total_bfs_vars = bfs->num_decision_vars + bfs->num_slack_vars + 1; // +1 for Z value
+    char **dec_var_names = spt->lp_def->decision_variables ? spt->lp_def->decision_variables->names : NULL;
 
     for (size_t bfs_var = 0; bfs_var < total_bfs_vars; bfs_var++) {
         if (bfs_var == 0) {
@@ -692,10 +702,16 @@ void sp_tableau_print_bfs(const SPTableau *spt, const SPBFS *bfs) {
         } else if (!bfs->var_in_bfs[bfs_var]) {
             continue; // Skip non-basic variables
         } else if (bfs_var <= bfs->num_decision_vars) {
-            // bfs_var - 1 is used to index into the decision variable names array, as bfs_var starts from 1 for decision variables.
-            printf("%s\t\t%0.4f\n", spt->lp_def->decision_variables->names[bfs_var - 1], bfs->var_values[bfs_var]);
+            if (dec_var_names) {
+                printf("%s\t\t%0.4f\n", dec_var_names[bfs_var - 1], bfs->var_values[bfs_var]);
+            } else {
+                printf("x%zu\t\t%0.4f\n", bfs_var, bfs->var_values[bfs_var]);
+            }
         } else if (bfs_var <= bfs->num_decision_vars + bfs->num_slack_vars) {
-            printf("s%zu\t\t%0.4f\n", (bfs_var - bfs->num_decision_vars), bfs->var_values[bfs_var]);
+            printf("slack-%zu\t\t%0.4f\n", (bfs_var - bfs->num_decision_vars), bfs->var_values[bfs_var]);
+        } else {
+            printf("Error: Unexpected variable index in BFS printing: %zu\n", bfs_var);
+            return;
         }
     }
 }
