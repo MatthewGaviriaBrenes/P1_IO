@@ -1,7 +1,7 @@
 // SPTableau.h
 
 #include "LPDefinition.h"
-#include "SPBFS.h"
+#include "SPBaseSolution.h"
 
 #ifndef SPTABLEAU_H
 #define SPTABLEAU_H
@@ -9,6 +9,19 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+// Enum to output status of the Simplex Tableau after solving steps. 
+// Used to indicate the current state of the tableau and the solution.
+enum SPTableauStatus {
+    SPT_STANDBY = 0,                    // Optimal solution has not been found yet. The tableau is still being processed.
+    SPT_OPTIMAL_SOLUTION_FOUND = 2,     // Optimal solution found. The tableau has reached an optimal state.
+    SPT_MULTPILE_SOLUTIONS_DETECTED = 3,  // Multiple optimal solutions found. The tableau has reached an optimal state, but there are multiple solutions.
+    SPT_DEGENERATED_PROBLEM = 4,         // Degenerate problem detected.
+    SPT_UNBOUNDED_PROBLEM = 5,          // Unbounded problem detected.
+    SPT_INFEASIBLE_PROBLEM = 6,         // Infeasible problem detected [for v2].
+    SPT_INVALID_STATE = 7               // Invalid problem detected (for other errors).
+};
+
 
 // Struct for Simplex Tableau (SPTableau) information.
 typedef struct {
@@ -26,8 +39,6 @@ typedef struct {
     size_t num_artificial_vars; // for v2
 
     // Additional fields for tracking the state of the tableau
-    bool multiple_solutions;    // Multiple solutions flag (true if multiple solutions exist, false otherwise). Defaults to false.
-    bool is_unbounded;          // Unbounded flag (true if the problem is unbounded, false by default). Stop further steps if true.
     size_t degeneration_level;  // If problem is degenerated, counts steps the tableau stays degenerated. May be used to handle potential cycling. Defaults to 0.
 } SPTableau;
 
@@ -51,14 +62,15 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt);
 // Caller must ensure that the LPDefinition struct is freed separately if it was dynamically allocated.
 void sp_tableau_free(SPTableau *spt);
 
-// Get the current BFS (Base Feasible Solution) from the tableau.
-// Returns a pointer to the created SPBFS struct. 
-// Caller is responsible for freeing the memory allocated for the SPBFS struct after use.
-SPBFS *sp_tableau_get_bfs(const SPTableau *spt);
+// Get the current base solution for the tableau. 
+// Returns a pointer to the SPBaseSolution struct representing the current BFS.
+// Caller is responsible for freeing the memory allocated for the SPBaseSolution struct after use.
+SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt);
 
-// Validate a provided BFS against the tableau's constraints.
+// Validate a provided Base solution against the tableau's constraints to confirm if it is a BFS (Bease Feasible Solution).
+// A valid BFS must satisfy all constraints of the tableau.
 // Does not confirm optimal solution.
-bool sp_tableau_validate_bfs(const SPTableau *spt, const SPBFS *bfs);
+bool sp_tableau_validate_bfs(const SPTableau *spt, const SPBaseSolution *spbs);
 
 // Returns a snapshot of the tableau's current state as a 2D array of doubles.
 // To be used if intermediate tableau states need to be displayed.
@@ -114,14 +126,14 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
 void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, size_t pivot_col_index);
 
 // Perform a single step of the simplex algorithm on the tableau.
-void sp_tableau_solve_step(SPTableau *spt);
+enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt);
 
 // Print the current state of the tableau to the console for debugging and visualization purposes.
 void sp_tableau_print_tableau(const SPTableau *spt);
 
 // Print the current state of the BFS (Base Feasible Solution) for the provided SPTableau.
 // Name of decision variables are included in the output if included in the SPT's LP definition.
-void sp_tableau_print_bfs(const SPTableau *spt, const SPBFS *bfs);
+void sp_tableau_print_bfs(const SPTableau *spt, const SPBaseSolution *spbs);
 
 
 //TODO: List of functions to add later...

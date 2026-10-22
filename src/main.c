@@ -2,7 +2,7 @@
 
 #include "simplex/LPDefinition.h"
 #include "simplex/SPTableau.h"
-#include "simplex/SPBFS.h"
+#include "simplex/SPBaseSolution.h"
 
 // Test cases for LPDefinition and its components
 #include "tests/LPTestCases.h"
@@ -28,10 +28,10 @@ int main() {
         sp_tableau_print_tableau(spt_belt_factory);
 
         printf("Printing BFS so far...\n");
-        SPBFS *test_bfs  = sp_tableau_get_bfs(spt_belt_factory);
+        SPBaseSolution *test_bfs  = sp_tableau_get_base_sol(spt_belt_factory);
         if (test_bfs != NULL) {
             sp_tableau_print_bfs(spt_belt_factory, test_bfs);
-            sp_bfs_free(test_bfs);
+            sp_base_sol_free(test_bfs);
         } else {
             printf("Error: Failed to retrieve BFS from tableau.\n");
         }
