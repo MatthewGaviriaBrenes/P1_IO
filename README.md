@@ -49,6 +49,7 @@ C
 - `src/gui`- Source code for GUI interface.
 - `src/simplex`- Source code for Simplex Solver's logic.
 - `src/tex`- Source code for LaTeX generator.
+- `src/tests`- Source code for test cases.
 - `Makefile` - Makefile to build executable with Make.
 
 ## How to build
