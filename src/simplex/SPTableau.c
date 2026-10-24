@@ -222,7 +222,7 @@ SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt) {
     // Add the values of the decision and slack variables from the tableau to the BFS struct.
     size_t num_spbs_vars = 1 + spt->num_decision_vars + spt->num_slack_vars; 
 
-    for (size_t col = 1; col < num_spbs_vars - 1; col++) { 
+    for (size_t col = 1; col < num_spbs_vars; col++) { 
         spbs->vars_in_base[col] = sp_tableau_is_base_column(spt, col);     // Mark if the variable is in the BFS
         spbs->var_values[col] = spbs->vars_in_base[col] ? sp_tableau_get_base_var_value(spt, col) : 0.0; // If not a base variable, set value to 0.0
     }
@@ -231,7 +231,7 @@ SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt) {
 
 // Validate a provided BFS against the tableau's constraints.
 // Does not confirm optimal solution.
-bool sp_tableau_validate_bfs(const SPTableau *spt, const SPBaseSolution *spbs) {
+bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs) {
     if (spt == NULL || spt->tableau == NULL || spbs == NULL) {
         printf("Error: Tableau or its data or BFS is NULL.\n");
         return false;
@@ -417,41 +417,41 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
 
     // Initialize pivot column to zero (Z column), will be updated to the index of the pivot column.
     // If no valid pivot column is found, assume that the solution is optimal and return 0.
-    size_t pivot_col_index = 0; 
+    size_t select_pivot_col = 0; 
     double best_value = 0.0; 
 
-    for (size_t j = 1; j < spt->num_cols - 1; j++) { // Exclude Z column (0) and RHS column (last)
-        double value = spt->tableau[0][j];
+    for (size_t col_index = 1; col_index < spt->num_cols - 1; col_index++) { // Exclude Z column (0) and RHS column (last)
+        double value = spt->tableau[0][col_index];
 
         // If the coefficient is zero and no other pivot column has been found yet, 
         // consider it as a potential pivot column for multiple solutions unless it is already in the base.
-        if (value == 0.0 && pivot_col_index == 0) {
-            if (!sp_tableau_is_base_column(spt, j)) {
-                pivot_col_index = j; 
+        if (value == 0.0) {
+            if (!sp_tableau_is_base_column(spt, col_index)) {
+                select_pivot_col = col_index; 
             }
         }
         // Maximization: Look for the most negative coefficient in the objective function row (row 0).
         else if (spt->lp_def->objective_function->type == MAXIMIZE) {
             if (value < best_value) {
                 best_value = value;
-                pivot_col_index = j;
+                select_pivot_col = col_index;
             }
         } 
         // Minimization: Look for the most positive coefficient in the objective function row (row 0).
         else {
             if (value > best_value) {
                 best_value = value;
-                pivot_col_index = j;
+                select_pivot_col = col_index;
             }
         }
     }
-    return pivot_col_index; // Returns 0 if no negative coefficients found (optimal solution reached)
+    return select_pivot_col; // Returns 0 if no negative coefficients found (optimal solution reached)
 }
 
 // Calculate minimum ratio for the incoming variable (pivot column) to determine the leaving variable (pivot row).
-// Returns an array of doubles containing the minimum ratios for each constraint row. The size of the array is equal to the number of constraints.
-// If ratio is non-negative or division by zero, value is -1. Otherwise, return the calculated ratio.
-// If returned array contains -1 for all rows, it indicates that the problem is unbounded.
+// Returns an array of doubles containing the minimum ratios for each tableau row (including objetive row) for indexing purposes.
+// Objective row defaults to -1 (not selectable).
+// If the pivot column value is negative or zero, the ratio is set to -1 (indicating no valid ratio).
 double *sp_tableau_calculate_min_ratios(const SPTableau *spt, size_t pivot_col_index) {
     if (spt == NULL || spt->tableau == NULL) {
         printf("Error: Tableau or its data is NULL.\n");
@@ -462,21 +462,27 @@ double *sp_tableau_calculate_min_ratios(const SPTableau *spt, size_t pivot_col_i
         return NULL;
     }
 
-    double *min_ratios = malloc(spt->num_constraints * sizeof(double));
+    double *min_ratios = malloc(spt->num_rows * sizeof(double));
     if (!min_ratios) {
         printf("Error: Memory allocation failed for minimum ratios array.\n");
         return NULL;
     }
 
-    for (size_t i = 0; i < spt->num_constraints; i++) {
-        double pivot_col_value = spt->tableau[1 + i][pivot_col_index];
-        double rhs_value = spt->tableau[1 + i][spt->num_cols - 1];
+    for (size_t row = 0; row < spt->num_rows; row++) {
+        // First row (row 0) is the objective function row, default to ratio -1.0 to skip it.
+        if (row == 0){
+            min_ratios[row] = -1.0;
+            continue;
+        }
+        // For other rows, calculate the minimum ratio.
+        double pivot_col_value = spt->tableau[row][pivot_col_index];
+        double rhs_value = spt->tableau[row][spt->num_cols - 1];
 
         // If the pivot column value is positive, calculate the ratio; otherwise, set it to -1 (indicating no valid ratio).
         if (pivot_col_value > 0) {
-            min_ratios[i] = rhs_value / pivot_col_value;
+            min_ratios[row] = rhs_value / pivot_col_value;
         } else {
-            min_ratios[i] = -1.0; // Invalid ratio (negative or division by zero)
+            min_ratios[row] = -1.0; // Invalid ratio (negative or division by zero)
         }
     }
     return min_ratios;
@@ -499,13 +505,13 @@ size_t sp_tableau_get_pivot_row(const SPTableau *spt, size_t pivot_col_index, do
     size_t pivot_row_index = 0; // Initialize to 0 to indicate no valid pivot row found.
     double min_ratio = -1.0; // Initialize to -1 to find the minimum positive ratio
 
-    for (size_t i = 0; i < spt->num_constraints; i++) {
-        double ratio = min_ratios[i];
+    for (size_t row = 0; row < spt->num_rows; row++) {
+        double new_ratio = min_ratios[row];
         // Only consider valid ratios (non-negative)
-        if (ratio >= 0) {
-            if (min_ratio < 0 || ratio < min_ratio) {
-                min_ratio = ratio;
-                pivot_row_index = 1 + i; // Adjust for the objective function row (index 0).
+        if (new_ratio >= 0) {
+            if (min_ratio < 0 || new_ratio < min_ratio) {
+                min_ratio = new_ratio;
+                pivot_row_index = row;
             }
         }
     }
@@ -595,7 +601,7 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
             printf("Error: Failed to retrieve BFS for validation. Cannot confirm optimal solution.\n");
             return SPT_INVALID_STATE; // Failed to retrieve BFS, cannot confirm optimal solution.
         }
-        bool validBFS = sp_tableau_validate_bfs(spt, spbs);
+        bool validBFS = sp_tableau_validate_base(spt, spbs);
         if (!validBFS) {
             printf("Error: Current BFS is invalid. Cannot proceed with simplex step.\n");
             free(spbs);
@@ -608,10 +614,12 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     
     // Step 2 - Calculate minimum ratios for the pivot column to determine the leaving variable (pivot row).
     double *min_ratios = sp_tableau_calculate_min_ratios(spt, pivot_col_index);
+
     if (min_ratios == NULL) {
         printf("Error: Failed to allocate memory to calculate minimum ratios for pivot column.\n");
         return SPT_INVALID_STATE; // Failed to allocate memory for minimum ratios, cannot proceed.
     }
+    
     size_t pivot_row_index = sp_tableau_get_pivot_row(spt, pivot_col_index, min_ratios);
     if (pivot_row_index == 0) {
         printf("Unbounded problem detected. No valid pivot row found.\n");
@@ -648,7 +656,7 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         printf("Error: Failed to retrieve BFS for validation after pivot operation.\n");
         return SPT_INVALID_STATE; // Failed to retrieve BFS, cannot validate.
     }
-    bool valid_bfs = sp_tableau_validate_bfs(spt, sp_tableau_get_base_sol(spt));
+    bool valid_bfs = sp_tableau_validate_base(spt, sp_tableau_get_base_sol(spt));
 
     if (future_pivot_col_index == 0) {
         // Get the new BFS after the pivot operation to validate it.
@@ -734,11 +742,11 @@ void sp_tableau_print_tableau(const SPTableau *spt) {
     }
 }
 
-// Print the current state of the BFS (Base Feasible Solution) for the provided SPTableau.
+// Print the current state of the BS (Base Solution) for the provided SPTableau.
 // Name of decision variables are included in the output if included in the SPT's LP definition.
-void sp_tableau_print_bfs(const SPTableau *spt, const SPBaseSolution *spbs) {
+void sp_tableau_print_base(const SPTableau *spt, const SPBaseSolution *spbs) {
     if (spt == NULL || spbs == NULL) {
-        printf("Error: Tableau or BFS is NULL.\n");
+        printf("Error: Tableau or base solution is NULL.\n");
         return;
     }
     if (!spt->lp_def) {
@@ -746,11 +754,12 @@ void sp_tableau_print_bfs(const SPTableau *spt, const SPBaseSolution *spbs) {
         return;
     }
     if (spt->num_decision_vars != spbs->num_decision_vars || spt->num_slack_vars != spbs->num_slack_vars) {
-        printf("Error: Mismatch between tableau and BFS variable counts.\n");
+        printf("Error: Mismatch between tableau and base solution variable counts.\n");
         return;
     }
 
-    printf("Current BFS State:\n");
+    printf("--- Current base solution ---\n");
+    printf("Is BFS?: %s\n", (sp_tableau_validate_base(spt, spbs) ? "Yes" : "No"));
     printf("Variable\tValue\n");
 
     size_t total_spbs_vars = spbs->num_decision_vars + spbs->num_slack_vars + 1; // +1 for Z value

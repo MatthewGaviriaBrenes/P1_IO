@@ -61,9 +61,9 @@ void lp_decisionvars_print(LPDecisionVars *vars) {
     printf("--- Decision Variables ---\n");
     for (int i = 0; i < vars->length; i++) {
         if (vars->names[i]) {
-            printf("Variable %d: %s\n", i, vars->names[i]);
+            printf("Variable %d: %s\n", i+1, vars->names[i]);
         } else {
-            printf("Variable %d: (null)\n", i);
+            printf("Variable %d: (null)\n", i+1);
         }
     }
     printf("\n");

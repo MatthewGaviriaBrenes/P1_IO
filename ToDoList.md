@@ -40,10 +40,11 @@ Slack variables and other non-decision variables can be inferred by type of LP c
 * [X] - Get row index of variable that exits BFS (and set pivot).
 * [X] - Normalize pivot row (multiply/divide pivot row's coefficients to get 1 in pivot cell)
 * [X] - Zeroing of pivot column (add/subtract pivot row's coefficients into other rows' coefficients to get zero coefficients in pivot column except pivot cell.)
-* [ ] - Testing of Simplex tableau solver with basic solution functionality.
-* [ ] - Printing Simplex Tableau solver's info on-screen for testing purposes and draft for integration with GUI.
+* [X] - Testing of Simplex tableau solver with basic solution functionality.
+* [X] - Printing Simplex Tableau solver's info on-screen for testing purposes and draft for integration with GUI.
 
 ### Simplex Tableau - Solver Functionality (Advanced)
+* [X] - Handle unbounded problems.
 * [ ] - Handle degenerated problems.
 * [ ] - Handle multiple solutions in Simplex tableau.
 * [ ] - Implement mechanism to search solutions between two solutions (calculated from multi-solution Simplex tableau). Consider new data entity (e.g. SPMultiSolutCalculator).

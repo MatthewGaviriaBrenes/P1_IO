@@ -65,7 +65,7 @@ void lp_definition_print(const LPDefinition *lp_def) {
 
     printf("--- LP Definition ---\n");
     printf("Number of Decision Variables: %zu\n", lp_def->num_decision_vars);
-    printf("Number of LPConstraints: %zu\n", lp_def->num_constraints);
+    printf("Number of Constraints: %zu\n", lp_def->num_constraints);
 
     // Print decision variables
     if (lp_def->decision_variables) {
