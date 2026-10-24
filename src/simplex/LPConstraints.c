@@ -250,7 +250,7 @@ void constrainst_print_all_constraints(const LPConstraints *constraintList, cons
         printf("Error: LPConstraints struct is NULL.\n");
         return;
     }
-    printf("--- LPConstraints ---\n");
+    printf("--- Constraints ---\n");
     for (size_t i = 0; i < constraintList->count; i++) {
         lp_constraints_print_constraint_definiton(constraintList, i, decision_vars);
     }

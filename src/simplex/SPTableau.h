@@ -2,6 +2,7 @@
 
 #include "LPDefinition.h"
 #include "SPBaseSolution.h"
+#include "SPMultiSolutions.h"
 
 #ifndef SPTABLEAU_H
 #define SPTABLEAU_H
@@ -70,7 +71,7 @@ SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt);
 // Validate a provided Base solution against the tableau's constraints to confirm if it is a BFS (Bease Feasible Solution).
 // A valid BFS must satisfy all constraints of the tableau.
 // Does not confirm optimal solution.
-bool sp_tableau_validate_bfs(const SPTableau *spt, const SPBaseSolution *spbs);
+bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs);
 
 // Returns a snapshot of the tableau's current state as a 2D array of doubles.
 // To be used if intermediate tableau states need to be displayed.
@@ -108,9 +109,9 @@ double sp_tableau_get_z_value(const SPTableau *spt);
 size_t sp_tableau_get_pivot_column(const SPTableau *spt);
 
 // Calculate minimum ratio for the incoming variable (pivot column) to determine the leaving variable (pivot row).
-// Returns an array of doubles containing the minimum ratios for each constraint row. The size of the array is equal to the number of constraints.
-// If ratio is non-negative or division by zero, value is -1. Otherwise, return the calculated ratio.
-// If returned array contains -1 for all rows, it indicates that the problem is unbounded.
+// Returns an array of doubles containing the minimum ratios for each tableau row (including objetive row) for indexing purposes.
+// Objective row defaults to -1 (not selectable).
+// If the pivot column value is negative or zero, the ratio is set to -1 (indicating no valid ratio).
 double *sp_tableau_calculate_min_ratios(const SPTableau *spt, size_t pivot_col_index);
 
 // Get the next variable leaving the basis (pivot row) based on the current tableau state.
@@ -131,9 +132,9 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt);
 // Print the current state of the tableau to the console for debugging and visualization purposes.
 void sp_tableau_print_tableau(const SPTableau *spt);
 
-// Print the current state of the BFS (Base Feasible Solution) for the provided SPTableau.
+// Print the current state of the BS (Base Solution) for the provided SPTableau.
 // Name of decision variables are included in the output if included in the SPT's LP definition.
-void sp_tableau_print_bfs(const SPTableau *spt, const SPBaseSolution *spbs);
+void sp_tableau_print_base(const SPTableau *spt, const SPBaseSolution *spbs);
 
 
 //TODO: List of functions to add later...

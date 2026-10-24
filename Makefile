@@ -9,7 +9,9 @@ SRC = src/main.c \
 	  src/simplex/LPDefinition.c \
 	  src/simplex/SPTableau.c \
 	  src/simplex/SPBaseSolution.c \
-	  src/tests/LPTestCases.c 
+	  src/simplex/SPMultiSolutions.c \
+	  src/tests/LPTestCases.c \
+	  src/tests/SPTest.c
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)

@@ -6,10 +6,75 @@
 
 #include "../simplex/LPDefinition.h"
 
-// Sample case used in previous tests.
-LPDefinition* lp_test_samplecase();
+// Test case - PyV Door and Window Factory
+// Decision vars: doors, windows
+// Objective function: Minimize Z = 3*doors + 5*windows
+// Constraints:
+// 1. 1*doors <= 4
+// 2. 2*windows <= 12
+// 3. 3*doors + 2*windows <= 18
+// doors, windows >= 0
+LPDefinition* lp_test_max_pyv();
 
-// Sample case: The Belt Factory.
-LPDefinition *lp_test_beltfactory();
 
-#endif // LP_TEST_CASES_H
+// Sample case: The Seat Belt Factory.
+// Decision vars: standard, deluxe
+// Objective function: Maximize Z = 3*standard + 4*deluxe
+// Constraints:
+// 1. standard + deluxe <= 40
+// 2. standard + 2*deluxe <= 60
+// standard, deluxe >= 0
+LPDefinition *lp_test_max_seatbeltfactory();
+
+
+// Sample case: Geppetto's Toy Factory.
+// Decision vars: toy_soldiers, toy_trains
+// Objective function: Maximize Z = 3*toy_soldiers + 2*toy_trains
+// Constraints:
+// 1. 2*toy_soldiers + toy_trains <= 100 - Finishing hours
+// 2. toy_soldiers + toy_trains <= 80 - Carpentry hours
+// 3. toy_soldiers <= 40 - Demand for toy soldiers
+// toy_soldiers, toy_trains >= 0
+LPDefinition *lp_test_max_geppetto();
+
+
+// Sample case: Dakota's Furniture Factory.
+// Decision vars: desks, tables, chairs
+// Objective function: Maximize Z = 60*desks + 30*tables + 20*chairs
+// Constraints:
+// 1. 8*desks + 6*tables + 1*chairs <= 48   - Woodworking hours
+// 2. 4*desks + 2*tables + 1.5*chairs <= 20 - Carpentry hours
+// 3. 2*desks + 1.5*tables + 0.5*chairs <= 8 - Finishing hours
+// 4. tables <= 5 - Demand for tables
+// desks, tables, chairs >= 0
+LPDefinition *lp_test_max_dakota_furniture_factory();
+
+// Sample minimization case.
+// Decision vars: x1, x2
+// Objective function: Minimize Z = 2x1 - x2
+// Constraints:
+// 1. 2x1 + 3x2 <= 10
+// 2. x1 + x2 <= 6
+// x1, x2 >= 0
+LPDefinition* lp_test_sample_min_case();
+
+// Sample case for unbounded problem - Bakery
+// Decision vars: baguettes, sweet_bread, baking_soda, flour
+// Objective function: Maximize Z = 36*baguettes + 30*sweet_bread - 3*baking_soda - 4*flour
+// Constraints:
+// 1. baguettes + sweet_bread - baking_soda <= 5
+// 2. 6*baguettes + 5*sweet_bread - flour <= 10
+// baguettes, sweet_bread, baking_soda, flour >= 0
+LPDefinition* lp_test_sample_unbounded_bakery();
+
+
+// Sample case with multiple optimal solutions.
+// Decision vars: x1, x2
+// Objective function: Maximize Z = 2x1 + 4x2
+// Constraints:
+// 1. x1 + 2x2 <= 5
+// 2. x1 + x2 <= 4
+// x1, x2 >= 0
+LPDefinition* lp_test_sample_multiple_solutions_case();
+
+#endif 
