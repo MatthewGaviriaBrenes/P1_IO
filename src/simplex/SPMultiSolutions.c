@@ -8,21 +8,21 @@
 SPMultiSolutions* sp_multi_solutions_create(SPBaseSolution *bfs_a, SPBaseSolution *bfs_b) {
     if (bfs_a == NULL || bfs_b == NULL) {
         printf("Error: One or both of the provided BFS are NULL.\n");
-        return NULL; // Invalid input
+        return NULL; 
     }
     if (bfs_a->num_decision_vars != bfs_b->num_decision_vars || bfs_a->num_slack_vars != bfs_b->num_slack_vars) {
         printf("Error: The two BFS must have the same number of decision and slack variables.\n");
-        return NULL; // The two BFS must have the same number of variables
+        return NULL; 
     }
     if (bfs_a->var_values[0] != bfs_b->var_values[0]) {
         printf("Error: The two BFS must have the same objective function value (Z).\n");
-        return NULL; // The two BFS must have the same objective function value
+        return NULL; 
     }
 
     SPMultiSolutions *multi_solutions = (SPMultiSolutions *)malloc(sizeof(SPMultiSolutions));
     if (multi_solutions == NULL) {
         printf("Error: Memory allocation failed for SPMultiSolutions struct.\n");
-        return NULL; // Memory allocation failed
+        return NULL; 
     }
 
     multi_solutions->bfs_a = bfs_a;
@@ -32,23 +32,18 @@ SPMultiSolutions* sp_multi_solutions_create(SPBaseSolution *bfs_a, SPBaseSolutio
 }
 
 // Free the SPMultiSolutions instance and its associated BFS.
+// Caller is responsible for freeing the memory allocated for the BFS structs after use.
 void sp_multi_solutions_free(SPMultiSolutions *multi_solutions) {
     if (multi_solutions == NULL) {
-        return; // Nothing to free
+        return;
     }
 
-    // Free the associated BFS
-    if (multi_solutions->bfs_a != NULL) {
-        sp_base_sol_free(multi_solutions->bfs_a);
-    }
-    if (multi_solutions->bfs_b != NULL) {
-        sp_base_sol_free(multi_solutions->bfs_b);
-    }
+    multi_solutions->bfs_a = NULL;
+    multi_solutions->bfs_b = NULL; 
 
     // Free the SPMultiSolutions struct itself
     free(multi_solutions);
 }
-
 
 // Calculate the midpoint BFS (bfs_c) between the two optimal solutions (bfs_a and bfs_b).
 // Alpha (a) is a value between 0 and 1 that determines the position of the midpoint.
@@ -67,7 +62,7 @@ SPBaseSolution* sp_multi_solutions_calculate_midpoint(SPMultiSolutions *multi_so
     size_t num_decision_vars = multi_solutions->bfs_a->num_decision_vars;
     size_t num_slack_vars = multi_solutions->bfs_a->num_slack_vars;
 
-    SPBaseSolution *midpoint_bfs = sp_base_sol_create(num_decision_vars, num_slack_vars);
+    SPBaseSolution *midpoint_bfs = sp_base_solution_create(num_decision_vars, num_slack_vars);
     if (midpoint_bfs == NULL) {
         printf("Error: Memory allocation failed for midpoint BFS.\n");
         return NULL; // Memory allocation failed
@@ -77,11 +72,14 @@ SPBaseSolution* sp_multi_solutions_calculate_midpoint(SPMultiSolutions *multi_so
     midpoint_bfs->var_values[0] = multi_solutions->bfs_a->var_values[0];
     midpoint_bfs->vars_in_base[0] = multi_solutions->bfs_a->vars_in_base[0];
 
-    // Calculate the midpoint values between the two BFS for decision and slack variables
-    for (size_t i = 1; i <= num_decision_vars + num_slack_vars; i++) {
-        midpoint_bfs->var_values[i] = alpha * multi_solutions->bfs_a->var_values[i] + (1 - alpha) * multi_solutions->bfs_b->var_values[i];
+    size_t num_vars = 1 + num_decision_vars + num_slack_vars; // Total variables in BFS: Z + decision vars + slack vars
+
+
+    // Calculate the midpoint values between the two BFS for decision and slack variables.
+    for (size_t var = 1; var < num_vars; var++) {
+        midpoint_bfs->var_values[var] = alpha * multi_solutions->bfs_a->var_values[var] + (1 - alpha) * multi_solutions->bfs_b->var_values[var];
         // Determine if the variable is in the base for the midpoint BFS based on the two BFS
-        midpoint_bfs->vars_in_base[i] = (multi_solutions->bfs_a->vars_in_base[i] || multi_solutions->bfs_b->vars_in_base[i]);
+        midpoint_bfs->vars_in_base[var] = (multi_solutions->bfs_a->vars_in_base[var] || multi_solutions->bfs_b->vars_in_base[var]);
     }
 
     return midpoint_bfs;

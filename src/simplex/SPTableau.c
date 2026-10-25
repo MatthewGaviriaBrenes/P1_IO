@@ -1,6 +1,14 @@
 // SPTableau.c
 
 #include "SPTableau.h"
+#include <math.h>
+
+// Threshold for degeneration level to prevent infinite loops in the simplex algorithm.
+const size_t SPT_DEGENERATION_THRESHOLD = 10; 
+
+// Feasibility tolerance for checking if a solution satisfies the constraints of the LP problem.
+// Needed to prevent false negatives due to floating-point precision errors during calculations.
+static const double SPT_FEASIBILITY_TOLERANCE = 1e-9;
 
 // Create the tableaul for the given LPDefinition struct. Returns a pointer to the created SPTableau struct.
 SPTableau *sp_tableau_create(LPDefinition *lp_def) {
@@ -209,7 +217,7 @@ SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt) {
         return NULL;
     }
 
-    SPBaseSolution *spbs = sp_base_sol_create(spt->num_decision_vars, spt->num_slack_vars);
+    SPBaseSolution *spbs = sp_base_solution_create(spt->num_decision_vars, spt->num_slack_vars);
     if (!spbs) {
         printf("Error: Failed to create BFS from tableau.\n");
         return NULL;
@@ -246,7 +254,7 @@ bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs) 
 
     // 2 - Value of all decision variables in the BFS must be non-negative.
     for (size_t col = 1; col <= spt->num_decision_vars; col++) {
-        if (spbs->vars_in_base[col] && spbs->var_values[col] < 0.0) {
+        if (spbs->var_values[col] < -SPT_FEASIBILITY_TOLERANCE) {
             printf("Error: Decision variable at index %zu in BFS is negative.\n", col);
             return false;
         }
@@ -264,29 +272,28 @@ bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs) 
         LPCoefficients *constraint_coeffs = constraints->coeff_sets[ci];
         // Loop through each decision variable in the BFS to evaluate the constraint.
         for (size_t j = 0; j < spt->num_decision_vars; j++) {
-            if (spbs->vars_in_base[1 + j]) { // Check if the decision variable is in the BFS
-                evaluated_result += spbs->var_values[1 + j] * constraint_coeffs->coefficients[j];
-            }
+            evaluated_result += spbs->var_values[1 + j] * constraint_coeffs->coefficients[j];
         }
 
         // Compared evaluated value against the constraint's RHS value based on the constraint type (LE, GE, EQ).
         bool valid = false;
         switch (constraints->types[ci]) {
             case LE:
-                valid = evaluated_result <= constraints->rhs_values[ci];
+                valid = evaluated_result <= constraints->rhs_values[ci] + SPT_FEASIBILITY_TOLERANCE;
                 break;
-            case GE:
-                valid = evaluated_result >= constraints->rhs_values[ci];
-                break;
-            case EQ:
-                valid = evaluated_result == constraints->rhs_values[ci];
-                break;
+            // Validation for >= and == constraints will be reserved for v2.
+            // case GE:
+            //     valid = evaluated_result >= constraints->rhs_values[ci] - SPT_FEASIBILITY_TOLERANCE;
+            //     break;
+            // case EQ:
+            //     valid = fabs(evaluated_result - constraints->rhs_values[ci]) <= SPT_FEASIBILITY_TOLERANCE;
+            //     break;
             default:
                 printf("Error: Unknown constraint type encountered during BFS validation.\n");
                 return false;
         }
         if (!valid) {
-            printf("Error: Constraint %zu is not satisfied.\n", ci);
+            printf("Error: Constraint %zu is not satisfied.\n", (ci + 1));
             return false;
         }
     }
@@ -513,6 +520,13 @@ size_t sp_tableau_get_pivot_row(const SPTableau *spt, size_t pivot_col_index, do
                 min_ratio = new_ratio;
                 pivot_row_index = row;
             }
+            // If two rows have the same minimum ratio, apply tie-breaking rules to select the pivot row.
+            if (min_ratio == new_ratio) {
+                double current_row_coeff  = spt->tableau[pivot_row_index][pivot_col_index];
+                double entering_row_coeff  = spt->tableau[row][pivot_col_index];
+                pivot_row_index = (entering_row_coeff < current_row_coeff) ? row : pivot_row_index;
+            }
+
         }
     }
     return pivot_row_index;
@@ -536,9 +550,11 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
     if (pivot_value == 1.0) {
         return; // Already canonized, no need to normalize again.
     }
+    
 
     // Get normalization factor to ensure a pivot value of 1 in the pivot cell
     double normalization_factor = 1.0 / pivot_value;
+
     // Normalize the pivot row by dividing each element in the row by the pivot value
     for (size_t pcol = 1; pcol < spt->num_cols; pcol++) {
         spt->tableau[pivot_row_index][pcol] *= normalization_factor;
@@ -583,27 +599,31 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
 }
 
 // Perform a single step of the simplex algorithm on the tableau.
-//TODO: Add steps to handle degeneration and multiple solutionss.
 enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
         printf("Error: Tableau or its data is NULL.\n");
         return SPT_INVALID_STATE;
     }
 
-    // Step 1 - Get the pivot column (incoming variable)
-    // If no valid pivot column is found, validate BFS to confirm if optimal solution is reached.
-    // TBD: Validate for multiple solutions.
-    // Might need to be redefined for infeasible problems in v2.
+    // Do not allow the simplex algorithm to continue if the degeneration level exceeds a threshold.
+    if (spt->degeneration_level >= SPT_DEGENERATION_THRESHOLD) {
+        printf("Error: Severe degeneration detected. Problem is stuck in a degenerate state and cannot be resolved.\n");
+        return SPT_DEGENERATED_LOOP; // Degeneration level exceeded threshold, problem is stuck.
+    }
+
+    // Step 1 - Get the pivot column (variable entering the base).
+    // If no valid pivot column is found, validate current base solution to confirm if valid (BFS) and optimal solution.
     size_t pivot_col_index = sp_tableau_get_pivot_column(spt);
+    
     if (pivot_col_index == 0) {
         SPBaseSolution *spbs = sp_tableau_get_base_sol(spt);
         if (spbs == NULL) {
-            printf("Error: Failed to retrieve BFS for validation. Cannot confirm optimal solution.\n");
+            printf("Error: Failed to retrieve current base solution for validation.\n");
             return SPT_INVALID_STATE; // Failed to retrieve BFS, cannot confirm optimal solution.
         }
         bool validBFS = sp_tableau_validate_base(spt, spbs);
         if (!validBFS) {
-            printf("Error: Current BFS is invalid. Cannot proceed with simplex step.\n");
+            printf("Error: Current base solution is invalid. Cannot proceed with Simplex step.\n");
             free(spbs);
             return SPT_INVALID_STATE; // Current BFS is invalid, cannot proceed.
         }
@@ -612,23 +632,25 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         return SPT_OPTIMAL_SOLUTION_FOUND; // No valid pivot column found, optimal solution reached.
     }
     
-    // Step 2 - Calculate minimum ratios for the pivot column to determine the leaving variable (pivot row).
+    // Step 2 - Find the variable leaving the base (pivot row) based on the minimum ratio test.
+    // If no valid pivot row is found, the problem is unbounded.
     double *min_ratios = sp_tableau_calculate_min_ratios(spt, pivot_col_index);
 
     if (min_ratios == NULL) {
         printf("Error: Failed to allocate memory to calculate minimum ratios for pivot column.\n");
-        return SPT_INVALID_STATE; // Failed to allocate memory for minimum ratios, cannot proceed.
+        return SPT_INVALID_STATE; //
     }
-    
+
     size_t pivot_row_index = sp_tableau_get_pivot_row(spt, pivot_col_index, min_ratios);
+
     if (pivot_row_index == 0) {
         printf("Unbounded problem detected. No valid pivot row found.\n");
         free(min_ratios);
-        return SPT_UNBOUNDED_PROBLEM; // No valid pivot row found, unbounded problem detected.
+        return SPT_UNBOUNDED_PROBLEM; 
     }
-
-    // Check if the current solution will be degenerate. 
-    // If the pivot's minimal ratio is zero, increase degeneration level. Otherwise, reset or keep at zero.
+    
+    // If entering variable has a ratio of zero, the problem is degenerate. Increment degeneration level and continue to next step.
+    // Otherwise, reset degeneration level to zero if not degenerate (or degeneration was mitigated).
     if (min_ratios[pivot_row_index] == 0.0) {
         printf("Warning: Degeneration detected.\n");
         spt->degeneration_level++;
@@ -636,30 +658,32 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         if (spt->degeneration_level > 0) {
             printf("Degeneration mitigated. Resetting degeneration level.\n");
         }
-        spt->degeneration_level = 0;    // Reset degeneration level if not degenerate (or degeneration was mitigated).
+        spt->degeneration_level = 0;
     }
+
     free(min_ratios);
 
-    // Step 3 - Canonize the pivot row to ensure a pivot value of 1 in the pivot cell.
+    // Step 3 - Canonize the pivot row to ensure a pivot value of 1 in the pivot cell and update pivot row.
     sp_tableau_canonize_pivot_row(spt, pivot_row_index, pivot_col_index);
-
-    // Step 4 - Canonize the non-pivot rows to ensure that all other entries in the pivot column are zero.
+    // Step 4 - Canonize the non-pivot rows to ensure identity matrix for variable entering the base (pivot column).
     sp_tableau_canonize_nonpivot_rows(spt, pivot_row_index, pivot_col_index);
 
     // Step 5 - Check if a new variable can enter the base (pivot column) in a future step.
-    // If no new variable can enter the base, validate current base to confirm it as BFS and optimal solution.
-    // If a new variable can enter the base, check if it has a zero coefficient in the objective row (multiple solutions).
-    size_t future_pivot_col_index = sp_tableau_get_pivot_column(spt);
 
+    // Get current base to confirm if it is a potentially valid BFS after the pivot operation and potential optimal solution.
+    // Return error state if cannot acquire the current base solution for validation.
     SPBaseSolution *spbs = sp_tableau_get_base_sol(spt);
     if (spbs == NULL) {
         printf("Error: Failed to retrieve BFS for validation after pivot operation.\n");
         return SPT_INVALID_STATE; // Failed to retrieve BFS, cannot validate.
     }
-    bool valid_bfs = sp_tableau_validate_base(spt, sp_tableau_get_base_sol(spt));
+    bool valid_bfs = sp_tableau_validate_base(spt, spbs);
 
+    // Check if another variable can enter the base in future steps.
+    // If no new variable can enter the base, confirm if the current BFS is valid, thus confirming an optimal solution has been reached.
+    // If a new variable can enter the base, check if multiple optimal solutions exist (coefficient is zero in itsobjective row).
+    size_t future_pivot_col_index = sp_tableau_get_pivot_column(spt);
     if (future_pivot_col_index == 0) {
-        // Get the new BFS after the pivot operation to validate it.
         if (valid_bfs) {
             printf("Optimal solution reached. No new variable can enter the BFS.\n");
             free(spbs);
@@ -671,20 +695,26 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         }
     } 
     if (spt->tableau[0][future_pivot_col_index] == 0.0 && valid_bfs) {
-        printf("Multiple solutions detected. Pivot column has a zero coefficient in the objective function row.\n");
+        printf("Multiple solutions detected. Non-base variable has coefficient zero in the objective function row.\n");
         free(spbs);
         return SPT_MULTPILE_SOLUTIONS_DETECTED; 
     } 
 
-    // If degeneration level is greater than 0, it indicates that the current solution is degenerate.
+    // If no optimal solution has been reached yet, check degeneration level to determine if the problem is stuck in a degenerate state.
+    if (spt->degeneration_level >= SPT_DEGENERATION_THRESHOLD) {
+        printf("Error: Severe degeneration detected. Problem is stuck in a degenerate state and cannot be resolved.\n"); 
+        free(spbs);
+        return SPT_DEGENERATED_LOOP;
+    }
     if (spt->degeneration_level > 0) {
         printf("Warning: Current degeneration level: %zu\n", spt->degeneration_level);
         free(spbs);
         return SPT_DEGENERATED_PROBLEM; 
     }
 
+    // No optimal solution has been reached yet and the problem is not degenerate.
     free(spbs);
-    return SPT_STANDBY; // Step completed successfully, continue to next iteration.
+    return SPT_STANDBY; 
 }
 
 // Print the current state of the tableau to the console for debugging and visualization purposes.
@@ -698,7 +728,6 @@ void sp_tableau_print_tableau(const SPTableau *spt) {
     size_t surplus_var_count = 1;
     size_t artificial_var_count = 1;
 
-    printf("Current Tableau State:\n");
     // Printing column headers
     printf("Z\t");
     for (size_t var_index = 1; var_index < spt->num_cols - 1; var_index++) {
@@ -744,43 +773,25 @@ void sp_tableau_print_tableau(const SPTableau *spt) {
 
 // Print the current state of the BS (Base Solution) for the provided SPTableau.
 // Name of decision variables are included in the output if included in the SPT's LP definition.
-void sp_tableau_print_base(const SPTableau *spt, const SPBaseSolution *spbs) {
-    if (spt == NULL || spbs == NULL) {
+void sp_tableau_print_base(const SPTableau *spt) {
+    if (spt == NULL) {
         printf("Error: Tableau or base solution is NULL.\n");
         return;
     }
-    if (!spt->lp_def) {
+    if (!spt->lp_def || !spt->lp_def->decision_variables) {
         printf("Error: LP definition or decision variables are NULL.\n");
         return;
     }
-    if (spt->num_decision_vars != spbs->num_decision_vars || spt->num_slack_vars != spbs->num_slack_vars) {
-        printf("Error: Mismatch between tableau and base solution variable counts.\n");
+
+    SPBaseSolution *spbs = sp_tableau_get_base_sol(spt);
+    if (!spbs) {
+        printf("Error: Failed to retrieve current base solution for printing.\n");
         return;
     }
+    sp_base_solution_print(spbs, spt->lp_def->decision_variables);
+    
+    bool is_bfs = sp_tableau_validate_base(spt, spbs);
+    printf("--- Is BFS?: %s ---\n", (is_bfs ? "Yes" : "No"));
 
-    printf("--- Current base solution ---\n");
-    printf("Is BFS?: %s\n", (sp_tableau_validate_base(spt, spbs) ? "Yes" : "No"));
-    printf("Variable\tValue\n");
-
-    size_t total_spbs_vars = spbs->num_decision_vars + spbs->num_slack_vars + 1; // +1 for Z value
-    char **dec_var_names = spt->lp_def->decision_variables ? spt->lp_def->decision_variables->names : NULL;
-
-    for (size_t spbs_var = 0; spbs_var < total_spbs_vars; spbs_var++) {
-        if (spbs_var == 0) {
-            printf("Z\t\t%0.4f\n", spbs->var_values[spbs_var]);
-        } else if (!spbs->vars_in_base[spbs_var]) {
-            continue; // Skip non-basic variables
-        } else if (spbs_var <= spbs->num_decision_vars) {
-            if (dec_var_names) {
-                printf("%s\t\t%0.4f\n", dec_var_names[spbs_var - 1], spbs->var_values[spbs_var]);
-            } else {
-                printf("x%zu\t\t%0.4f\n", spbs_var, spbs->var_values[spbs_var]);
-            }
-        } else if (spbs_var <= spbs->num_decision_vars + spbs->num_slack_vars) {
-            printf("slack-%zu\t\t%0.4f\n", (spbs_var - spbs->num_decision_vars), spbs->var_values[spbs_var]);
-        } else {
-            printf("Error: Unexpected variable index in BFS printing: %zu\n", spbs_var);
-            return;
-        }
-    }
+    free(spbs);
 }

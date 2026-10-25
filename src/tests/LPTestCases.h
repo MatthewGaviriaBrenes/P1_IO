@@ -38,7 +38,7 @@ LPDefinition *lp_test_max_seatbeltfactory();
 LPDefinition *lp_test_max_geppetto();
 
 
-// Sample case: Dakota's Furniture Factory.
+// Sample case: Dakota Tables.
 // Decision vars: desks, tables, chairs
 // Objective function: Maximize Z = 60*desks + 30*tables + 20*chairs
 // Constraints:
@@ -47,16 +47,16 @@ LPDefinition *lp_test_max_geppetto();
 // 3. 2*desks + 1.5*tables + 0.5*chairs <= 8 - Finishing hours
 // 4. tables <= 5 - Demand for tables
 // desks, tables, chairs >= 0
-LPDefinition *lp_test_max_dakota_furniture_factory();
+LPDefinition *lp_test_max_dakota_tables();
 
 // Sample minimization case.
 // Decision vars: x1, x2
-// Objective function: Minimize Z = 2x1 - x2
+// Objective function: Minimize Z = 2x1 - 3x2
 // Constraints:
-// 1. 2x1 + 3x2 <= 10
-// 2. x1 + x2 <= 6
+// 1. x1 + x2 <= 4
+// 2. x1 - x2 <= 6
 // x1, x2 >= 0
-LPDefinition* lp_test_sample_min_case();
+LPDefinition* lp_test_min_sample_case();
 
 // Sample case for unbounded problem - Bakery
 // Decision vars: baguettes, sweet_bread, baking_soda, flour
@@ -65,16 +65,26 @@ LPDefinition* lp_test_sample_min_case();
 // 1. baguettes + sweet_bread - baking_soda <= 5
 // 2. 6*baguettes + 5*sweet_bread - flour <= 10
 // baguettes, sweet_bread, baking_soda, flour >= 0
-LPDefinition* lp_test_sample_unbounded_bakery();
+LPDefinition* lp_test_unbounded_bakery();
 
 
-// Sample case with multiple optimal solutions.
+// Sample case for degenerate problem.
 // Decision vars: x1, x2
-// Objective function: Maximize Z = 2x1 + 4x2
+// Objective function: Maximize Z = 2x1 + x2
 // Constraints:
-// 1. x1 + 2x2 <= 5
-// 2. x1 + x2 <= 4
+// 1. 3x1 + x2 <= 6
+// 2. x1 - x2 <= 2
+// 3. x2 <= 3
 // x1, x2 >= 0
-LPDefinition* lp_test_sample_multiple_solutions_case();
+LPDefinition* lp_test_sample_degenerate_case();
+
+// Sample case for case with multiple optimal solutions.
+// Decision vars: x1, x2
+// Objective function: Maximize Z = 4x1 + 14x2
+// Constraints:
+// 1. 2x1 + 7x2 <= 21
+// 2. 7x1 + 2x2 <= 21
+// x1, x2 >= 0
+LPDefinition * lp_test_sample_multisolutions_case();
 
 #endif 

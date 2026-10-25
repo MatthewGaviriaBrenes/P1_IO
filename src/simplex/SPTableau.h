@@ -11,16 +11,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Threshold for degeneration level to prevent infinite loops in the Simplex algorithm.
+extern const size_t SPT_DEGENERATION_THRESHOLD; 
+
 // Enum to output status of the Simplex Tableau after solving steps. 
 // Used to indicate the current state of the tableau and the solution.
 enum SPTableauStatus {
-    SPT_STANDBY = 0,                    // Optimal solution has not been found yet. The tableau is still being processed.
-    SPT_OPTIMAL_SOLUTION_FOUND = 2,     // Optimal solution found. The tableau has reached an optimal state.
-    SPT_MULTPILE_SOLUTIONS_DETECTED = 3,  // Multiple optimal solutions found. The tableau has reached an optimal state, but there are multiple solutions.
-    SPT_DEGENERATED_PROBLEM = 4,         // Degenerate problem detected.
-    SPT_UNBOUNDED_PROBLEM = 5,          // Unbounded problem detected.
-    SPT_INFEASIBLE_PROBLEM = 6,         // Infeasible problem detected [for v2].
-    SPT_INVALID_STATE = 7               // Invalid problem detected (for other errors).
+    SPT_STANDBY = 0,                        // Optimal solution has not been found yet. The tableau is still being processed.
+    SPT_OPTIMAL_SOLUTION_FOUND = 1,         // Unique optimal solution found. The tableau has reached an optimal state.
+    SPT_MULTPILE_SOLUTIONS_DETECTED = 2,    // Problem has multiple optimal solutions (run additional steps to find them).
+    SPT_DEGENERATED_PROBLEM = 3,            // Degenerate problem detected.
+    SPT_UNBOUNDED_PROBLEM = 4,              // Unbounded problem detected.
+    SPT_DEGENERATED_LOOP = 5,               // Problem is stuck in a degenerate infinte loop and cannot be resolved.
+    SPT_INFEASIBLE_PROBLEM = 6,             // Infeasible problem detected [for v2].
+    SPT_INVALID_STATE = 7                   // Invalid problem detected (for other errors).
 };
 
 
@@ -134,7 +138,7 @@ void sp_tableau_print_tableau(const SPTableau *spt);
 
 // Print the current state of the BS (Base Solution) for the provided SPTableau.
 // Name of decision variables are included in the output if included in the SPT's LP definition.
-void sp_tableau_print_base(const SPTableau *spt, const SPBaseSolution *spbs);
+void sp_tableau_print_base(const SPTableau *spt);
 
 
 //TODO: List of functions to add later...
