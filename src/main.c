@@ -91,7 +91,7 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
     int nv = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(app.variables_spin));
     int nc = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(app.restricciones_spin));
     if (nv < MIN_FIELDS || nv > MAX_FIELDS || nc < MIN_FIELDS || nc > MAX_FIELDS) {
-        show_error("La cantidad de variables y restricciones debe estar entre 2 y 15.");
+        show_error("The number of variables and restrictions must be between 2 and 15");
         return;
     }
 
@@ -109,12 +109,12 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
     gtk_box_pack_start(GTK_BOX(app.objective_fields_box), name_col, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(app.objective_fields_box), coef_col, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(name_col), make_label("Variable"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(coef_col), make_label("Coeficiente"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(coef_col), make_label("coefficient"), FALSE, FALSE, 0);
     for (int j = 0; j < nv; ++j) {
         char var_default[32], coef_default[16];
         g_snprintf(var_default, sizeof(var_default), "x%d", j + 1);
         g_snprintf(coef_default, sizeof(coef_default), "%d", j == 0 ? 1 : 0);
-        app.var_name_entries[j] = make_entry("Nombre", var_default);
+        app.var_name_entries[j] = make_entry("Name", var_default);
         app.objective_coeff_entries[j] = make_entry("0", coef_default);
         gtk_box_pack_start(GTK_BOX(name_col), app.var_name_entries[j], FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(coef_col), app.objective_coeff_entries[j], FALSE, FALSE, 0);
@@ -123,7 +123,7 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
     for (int i = 0; i < nc; ++i) {
         GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
         char row_label[32], rhs_default[16];
-        g_snprintf(row_label, sizeof(row_label), "Restricción %d:", i + 1);
+        g_snprintf(row_label, sizeof(row_label), "Restriction %d:", i + 1);
         g_snprintf(rhs_default, sizeof(rhs_default), "%d", i + 1);
         gtk_box_pack_start(GTK_BOX(app.constraints_fields_box), row, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(row), make_label(row_label), FALSE, FALSE, 0);
@@ -134,14 +134,14 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
             gtk_box_pack_start(GTK_BOX(row), app.constraint_coeff_entries[i][j], FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(row), make_label("≤"), FALSE, FALSE, 0);
-        app.constraint_rhs_entries[i] = make_entry("lado derecho ≥ 0", rhs_default);
+        app.constraint_rhs_entries[i] = make_entry("Right side ≥ 0", rhs_default);
         gtk_entry_set_width_chars(GTK_ENTRY(app.constraint_rhs_entries[i]), 10);
         gtk_box_pack_start(GTK_BOX(row), app.constraint_rhs_entries[i], FALSE, FALSE, 0);
     }
 
     gtk_widget_show_all(app.objective_fields_box);
     gtk_widget_show_all(app.constraints_fields_box);
-    set_status("Campos generados. Complete los coeficientes y pulse «Resolver y generar PDF».");
+    set_status("Solve and generate PDF.");
 }
 
 static void on_clear_clicked(GtkButton *button, gpointer user_data) {
@@ -155,7 +155,7 @@ static void on_clear_clicked(GtkButton *button, gpointer user_data) {
     gtk_combo_box_set_active(GTK_COMBO_BOX(app.objective_combo), 0);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(app.show_intermediate_check), FALSE);
     on_generate_fields_clicked(NULL, NULL);
-    set_status("Formulario limpiado.");
+    set_status("Form cleaned.");
 }
 
 static gboolean parse_entry_number(GtkWidget *entry, double *value) {
@@ -230,14 +230,14 @@ static void write_tableau(FILE *f, const TableauSnapshot *snap, const char *capt
 
 static const char *status_text(enum SPTableauStatus status) {
     switch (status) {
-        case SPT_OPTIMAL_SOLUTION_FOUND: return "Se encontró una solución óptima.";
-        case SPT_MULTPILE_SOLUTIONS_DETECTED: return "Se detectaron múltiples soluciones óptimas.";
-        case SPT_DEGENERATED_PROBLEM: return "Se detectó degeneración durante el procedimiento.";
-        case SPT_UNBOUNDED_PROBLEM: return "El problema es no acotado.";
-        case SPT_DEGENERATED_LOOP: return "El algoritmo se detuvo por degeneración/ciclado.";
-        case SPT_INFEASIBLE_PROBLEM: return "El problema es infactible.";
-        case SPT_INVALID_STATE: return "No fue posible validar el estado del tableau.";
-        default: return "El algoritmo no alcanzó un estado final conocido.";
+        case SPT_OPTIMAL_SOLUTION_FOUND: return "Optimal solution found.";
+        case SPT_MULTPILE_SOLUTIONS_DETECTED: return "Multiple optimal solutions found.";
+        case SPT_DEGENERATED_PROBLEM: return "Degenerated problem detected.";
+        case SPT_UNBOUNDED_PROBLEM: return "Unbounded problem.";
+        case SPT_DEGENERATED_LOOP: return "Algorithm halted, degenerated loop";
+        case SPT_INFEASIBLE_PROBLEM: return "Infeasible problem";
+        case SPT_INVALID_STATE: return "Invalid table state.";
+        default: return "The algorithm didn't reached a conclusion.";
     }
 }
 
@@ -282,22 +282,22 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
         }
         fprintf(f, " &\\le %.4g \\\\\n", lp->constraints->rhs_values[i]);
     }
-    fprintf(f, "x_j &\\ge 0\\quad\\text{para toda variable }j\n\\end{align*}\n");
+    fprintf(f, "x_j &\\ge 0\\quad\\text{for every variable }j\n\\end{align*}\n");
 
-    write_tableau(f, initial_snapshot, "Tableau inicial");
+    write_tableau(f, initial_snapshot, "Initial table");
     if (include_intermediate && history_count > 0) {
-        fprintf(f, "\\section*{Tableaux intermedios}\nSe registraron estados del tableau durante las iteraciones.\\par\n");
+        fprintf(f, "\\section*{Middle tables}\nTable states were saved during the iterations\\par\n");
         for (size_t k = 0; k < history_count; ++k) {
             char caption[64];
-            g_snprintf(caption, sizeof(caption), "Después del paso %zu", k + 1);
+            g_snprintf(caption, sizeof(caption), "After step %zu", k + 1);
             write_tableau(f, &history[k], caption);
         }
     }
-    fprintf(f, "\\section*{Resultado}\n%s\\par\n", status);
+    fprintf(f, "\\section*{Result}\n%s\\par\n", status);
     if (final_status == SPT_OPTIMAL_SOLUTION_FOUND || final_status == SPT_MULTPILE_SOLUTIONS_DETECTED) {
         SPBaseSolution *base = sp_tableau_get_base_sol(spt);
-        fprintf(f, "Valor de la función objetivo reportado por el tableau: $Z=%.6g$.\\par\n", sp_tableau_get_z_value(spt));
-        fprintf(f, "\\textbf{Valores de las variables:}\\par\n\\begin{itemize}\n");
+        fprintf(f, "Objective function value: $Z=%.6g$.\\par\n", sp_tableau_get_z_value(spt));
+        fprintf(f, "\\textbf{Variable values:}\\par\n\\begin{itemize}\n");
         for (size_t j = 0; j < lp->num_decision_vars; ++j) {
             double x = sp_tableau_is_base_variable(spt, j + 1)
                 ? sp_tableau_get_base_var_value(spt, j + 1) : 0.0;
@@ -310,7 +310,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     }
     TableauSnapshot final_snapshot = {0};
     if (save_snapshot(&final_snapshot, spt)) {
-        write_tableau(f, &final_snapshot, "Tableau final");
+        write_tableau(f, &final_snapshot, "Final Table");
         free_snapshot(&final_snapshot);
     }
     fprintf(f, "\\end{document}\n");
@@ -324,7 +324,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     gboolean spawned = g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH,
                                     NULL, NULL, NULL, NULL, &exit_status, &error);
     if (!spawned || !g_spawn_check_wait_status(exit_status, &error)) {
-        gchar *msg = g_strdup_printf("No se pudo compilar el PDF. Verifique que pdflatex esté instalado. Archivo fuente: %s%s%s",
+        gchar *msg = g_strdup_printf("Couldn't compile PDF. Download pdflatex and install it. Source: %s%s%s",
                                      tex_path, error ? "\n" : "", error ? error->message : "");
         show_error(msg);
         g_free(msg);
@@ -339,8 +339,8 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
         gchar *fallback[] = { (gchar *)"xdg-open", pdf_path, NULL };
         if (!g_spawn_async(NULL, fallback, NULL, G_SPAWN_SEARCH_PATH,
                            NULL, NULL, NULL, &error)) {
-            gchar *msg = g_strdup_printf("PDF creado en %s, pero no se pudo abrir automáticamente: %s",
-                                         pdf_path, error ? error->message : "no hay visor disponible");
+            gchar *msg = g_strdup_printf("PDF created on %s",
+                                         pdf_path, error ? error->message : "no way to open PDF.");
             set_status(msg);
             g_free(msg);
             g_clear_error(&error);
@@ -360,56 +360,56 @@ static void free_model(LPDefinition *lp) {
 static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     (void)button; (void)user_data;
     if (app.nvars < MIN_FIELDS || app.nconstraints < MIN_FIELDS) {
-        show_error("Primero pulse «Actualizar campos» para generar las variables y restricciones.");
+        show_error("First press <Update fields> to generate variables and restrictions.");
         return;
     }
 
     LPDecisionVars *vars = lp_decisionvars_create(app.nvars);
-    if (!vars) { show_error("No se pudo crear la lista de variables."); return; }
+    if (!vars) { show_error("Couldn't create variable list."); return; }
     double obj_values[MAX_FIELDS] = {0};
     for (size_t j = 0; j < app.nvars; ++j) {
         const char *name = gtk_entry_get_text(GTK_ENTRY(app.var_name_entries[j]));
         if (!name || !*name) {
             lp_decisionvars_free(vars);
-            show_error("Cada variable debe tener un nombre."); return;
+            show_error("Every variable must have a name"); return;
         }
         lp_decisionvars_set_var(vars, j, name);
         if (!parse_entry_number(app.objective_coeff_entries[j], &obj_values[j])) {
             lp_decisionvars_free(vars);
-            show_error("Todos los coeficientes de la función objetivo deben ser números reales válidos."); return;
+            show_error("Every coefficient from variables must have a valid number."); return;
         }
     }
 
     LPCoefficients *obj_coeffs = lp_coefficients_create_from_array(app.nvars, obj_values);
-    if (!obj_coeffs) { lp_decisionvars_free(vars); show_error("No se pudieron crear los coeficientes de la función objetivo."); return; }
+    if (!obj_coeffs) { lp_decisionvars_free(vars); show_error("Couldn't create coefficients."); return; }
     enum ObjectiveFunctionType obj_type = gtk_combo_box_get_active(GTK_COMBO_BOX(app.objective_combo)) == 1 ? MINIMIZE : MAXIMIZE;
     LPObjectiveFunc *obj = lp_objectivefunc_create(obj_type, app.nvars, obj_coeffs);
     if (!obj) {
         lp_coefficients_free(obj_coeffs); lp_decisionvars_free(vars);
-        show_error("No se pudo crear la función objetivo."); return;
+        show_error("Couldn't create objective function."); return;
     }
 
     LPConstraints *constraints = lp_constraints_create(app.nconstraints, app.nvars);
     if (!constraints) {
         lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-        show_error("No se pudieron crear las restricciones."); return;
+        show_error("Couldn't create restrictions."); return;
     }
     for (size_t i = 0; i < app.nconstraints; ++i) {
         double row_values[MAX_FIELDS] = {0}, rhs = 0;
         for (size_t j = 0; j < app.nvars; ++j) {
             if (!parse_entry_number(app.constraint_coeff_entries[i][j], &row_values[j])) {
                 lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-                show_error("Todos los coeficientes de las restricciones deben ser números reales válidos."); return;
+                show_error("Every coefficient from restrictions must have a valid number."); return;
             }
         }
         if (!parse_entry_number(app.constraint_rhs_entries[i], &rhs) || rhs < 0) {
             lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-            show_error("Cada lado derecho debe ser un número real mayor o igual a cero."); return;
+            show_error("Each right-hand side must be a real number greater than or equal to zero."); return;
         }
         LPCoefficients *row = lp_coefficients_create_from_array(app.nvars, row_values);
         if (!row) {
             lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-            show_error("No se pudieron crear los coeficientes de una restricción."); return;
+            show_error("Couldn't create coefficients from restrictions"); return;
         }
         lp_constraints_add_constraint(constraints, row, LE, rhs);
         lp_coefficients_free(row);
@@ -418,12 +418,12 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     LPDefinition *lp = lp_definition_create(vars, obj, constraints);
     if (!lp) {
         lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-        show_error("La definición del problema lineal no es válida."); return;
+        show_error("LPR not valid."); return;
     }
     SPTableau *spt = sp_tableau_create(lp);
     if (!spt) {
         free_model(lp);
-        show_error("No se pudo inicializar el tableau Simplex. Revise el modelo y la implementación."); return;
+        show_error("Couldn't create Simplex"); return;
     }
 
     gboolean include_intermediate = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(app.show_intermediate_check));
@@ -432,7 +432,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     size_t history_count = 0;
     if (!save_snapshot(&initial_snapshot, spt)) {
         free(history); sp_tableau_free(spt); free_model(lp);
-        show_error("No se pudo guardar el tableau inicial."); return;
+        show_error("Couldn't save initial table."); return;
     }
     size_t steps = 0;
     enum SPTableauStatus result = SPT_STANDBY;
@@ -453,13 +453,13 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
 
     const char *result_message = status_text(result);
     const char *problem_name = gtk_entry_get_text(GTK_ENTRY(app.problem_name_entry));
-    if (!problem_name || !*problem_name) problem_name = "Problema de programación lineal";
+    if (!problem_name || !*problem_name) problem_name = "Linear Programming Problem";
     gboolean pdf_ok = write_report_and_pdf(lp, spt, problem_name, result_message,
                                            include_intermediate, steps, result,
                                            &initial_snapshot, history, history_count);
-    gchar *summary = g_strdup_printf("%s Pasos ejecutados: %zu. %s",
+    gchar *summary = g_strdup_printf("%s Steps: %zu. %s",
                                      result_message, steps,
-                                     pdf_ok ? "PDF generado: informe_simplex.pdf" : "No se pudo generar el PDF; revise el mensaje de error.");
+                                     pdf_ok ? "PDF generated: informe_simplex.pdf" : "Couldn't generate PDF.");
     set_status(summary);
     show_info(summary);
     g_free(summary);
@@ -483,7 +483,7 @@ static gboolean load_builder_file(GtkBuilder *builder, GError **error) {
     if (g_file_test(UI_FILE_2, G_FILE_TEST_EXISTS))
         return gtk_builder_add_from_file(builder, UI_FILE_2, error) != 0;
     g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_NOENT,
-                "No se encontró simplex.glade. Busqué '%s' y '%s'.", UI_FILE_1, UI_FILE_2);
+                "Couldn't find simplex.glade. Search '%s' and '%s'.", UI_FILE_1, UI_FILE_2);
     return FALSE;
 }
 
@@ -493,7 +493,7 @@ int main(int argc, char **argv) {
     app.builder = gtk_builder_new();
     GError *error = NULL;
     if (!load_builder_file(app.builder, &error)) {
-        g_printerr("Error cargando Glade: %s\n", error ? error->message : "error desconocido");
+        g_printerr("Error loading Glade: %s\n", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
         g_object_unref(app.builder);
         return EXIT_FAILURE;
@@ -513,7 +513,7 @@ int main(int argc, char **argv) {
     app.output_status_label = get_widget("output_status_label");
 
     if (!app.window || !app.objective_fields_box || !app.constraints_fields_box) {
-        g_printerr("El archivo Glade no contiene todos los objetos requeridos.\n");
+        g_printerr("Glade Object Error.\n");
         g_object_unref(app.builder);
         return EXIT_FAILURE;
     }
