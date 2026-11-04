@@ -263,7 +263,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                "\\begin{document}\\maketitle\n\\section*{Problema}\n"
                "\\textbf{Nombre:} %s\\\\\n\\textbf{Curso:} %s\\\\\n"
                "\\textbf{Integrantes:} %s\\\\\n\\textbf{Semestre:} %s\n"
-               "\\section*{Modelo matemático}\n", safe_members, safe_semester,
+               "\\section*{Mathematical Model}\n", safe_members, safe_semester,
                safe_name, safe_course, safe_members, safe_semester);
     fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
@@ -351,7 +351,8 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
 }
 
 static void free_model(LPDefinition *lp) {
-    if (!lp) return;    if (lp->objective_function) lp_objectivefunc_free(lp->objective_function);
+    if (!lp) return;    
+    if (lp->objective_function) lp_objectivefunc_free(lp->objective_function);
     if (lp->constraints) lp_constraints_free(lp->constraints);
     if (lp->decision_variables) lp_decisionvars_free(lp->decision_variables);
     lp_definition_free(lp);
@@ -448,7 +449,6 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
             result == SPT_INFEASIBLE_PROBLEM || result == SPT_INVALID_STATE) break;
     }
     if (steps >= MAX_SIMPLEX_STEPS && result != SPT_OPTIMAL_SOLUTION_FOUND && result != SPT_MULTPILE_SOLUTIONS_DETECTED && result != SPT_UNBOUNDED_PROBLEM && result != SPT_INFEASIBLE_PROBLEM && result != SPT_INVALID_STATE)
-        result = SPT_DEGENERATED_LOOP;
         result = SPT_DEGENERATED_LOOP;
 
     const char *result_message = status_text(result);
