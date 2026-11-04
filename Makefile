@@ -10,6 +10,7 @@ SRC = src/main.c \
 	  src/simplex/SPTableau.c \
 	  src/simplex/SPBaseSolution.c \
 	  src/simplex/SPMultiSolutions.c \
+	  src/simplex/presentation.c \
 	  src/tests/LPTestCases.c \
 	  src/tests/SPTest.c
 

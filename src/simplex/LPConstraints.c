@@ -1,5 +1,5 @@
 // LPConstraints.c
-
+#include <stdbool.h>
 #include "LPConstraints.h"
 
 const size_t MINIMUM_CONSTRAINTS = 2; // Minimum number of constraints

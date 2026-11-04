@@ -38,34 +38,18 @@ void presentation_gen_filename(char *buffer, size_t bufferSize)
  
 void presentation_preamble(FILE *file)
 {
-    fprintf(file, "\\documentclass{beamer}\n");
-
+    fprintf(file, "\\documentclass[11pt]{article}\n");
     fprintf(file, "\\usepackage[utf8]{inputenc}\n");
     fprintf(file, "\\usepackage[T1]{fontenc}\n");
-    fprintf(file, "\\usepackage{xcolor}\n");
-    fprintf(file, "\\usepackage{listings}\n");
-    fprintf(file, "\\usepackage{tikz}\n");
-    fprintf(file, "\\usepackage{pgfplots}\n");
-    fprintf(file, "\\pgfplotsset{compat=1.18}\n");
+    fprintf(file, "\\usepackage[margin=2.5cm]{geometry}\n");
     fprintf(file, "\\usepackage{amsmath}\n");
     fprintf(file, "\\usepackage{booktabs}\n");
-    fprintf(file, "\\usepackage{array}\n\n");
-
-    fprintf(file, "\\usetheme{Madrid}\n\n");
-
-    //Token category colors.
-     
-    fprintf(file, "\\definecolor{keywordcolor}{RGB}{0,0,180}\n");
-    fprintf(file, "\\definecolor{identifiercolor}{RGB}{0,120,0}\n");
-    fprintf(file, "\\definecolor{numbercolor}{RGB}{180,80,0}\n");
-    fprintf(file, "\\definecolor{stringcolor}{RGB}{160,0,120}\n");
-    fprintf(file, "\\definecolor{operatorcolor}{RGB}{120,0,0}\n");
-    fprintf(file, "\\definecolor{delimitercolor}{RGB}{80,80,80}\n");
-    fprintf(file, "\\definecolor{errorcolor}{RGB}{220,0,0}\n\n");
+    fprintf(file, "\\usepackage{array}\n");
+    fprintf(file, "\\usepackage{graphicx}\n");
+    fprintf(file, "\\usepackage{xcolor}\n");fprintf(file, "\\usepackage[expansion=false]{microtype}\n\n");
 
     fprintf(file, "\\title{Project 01 - Simplex}\n");
-    fprintf(file, "\\author{Matthew Gaviria Brenes - 2023179864 \\ Esteban Fonseca Montoya - 201028937 \\ Josué Meza Solano - 2024240640}\n");
-    fprintf(file, "\\institute{Investigacion de Operaciones\\\\Semestre: II, 2026}\n");
+    fprintf(file, "\\author{Matthew Gaviria Brenes - 2023179864 \\\\\n Esteban Fonseca Montoya - 201028937 \\\\\n Josué Meza Solano - 2024240640}\n");
     fprintf(file, "\\date{\\today}\n\n");
 
     fprintf(file, "\\begin{document}\n\n");
@@ -75,9 +59,9 @@ void presentation_preamble(FILE *file)
  
 void presentation_cover(FILE *file)
 {
-    fprintf(file, "\\begin{frame}\n");
-    fprintf(file, "\\titlepage\n");
-    fprintf(file, "\\end{frame}\n\n");
+    fprintf(file, "\\maketitle\n");
+    fprintf(file, "\\thispagestyle{empty}\n");
+    fprintf(file, "\\clearpage\n\n");
 }
 
 void presentation_simplex_slide(FILE *file)
@@ -86,8 +70,8 @@ void presentation_simplex_slide(FILE *file)
         return;
     }
 
-    fprintf(file, "\\begin{frame}{Historia y propiedades del algoritmo Simplex}\n");
-    fprintf(file, "\\small\n");
+    fprintf(file, "\\section{History of the Simplex Method}\n");
+    fprintf(file, "\\begingroup\\small\n");
     fprintf(file, "\\begin{itemize}\n");
     fprintf(file,
         "    \\item George B. Dantzig developed the Simplex method in 1947 to "
@@ -109,7 +93,7 @@ void presentation_simplex_slide(FILE *file)
         "    \\item It is efficient in many practical problems, although its "
         "worst-case theoretical complexity is exponential.\n");
     fprintf(file, "\\end{itemize}\n");
-    fprintf(file, "\\end{frame}\n\n");
+    fprintf(file, "\\endgroup\n");
 }
 
 // Escapes characters that have a special meaning in LaTeX.
@@ -146,15 +130,12 @@ void presentation_tableau(FILE *file,
 
     const size_t rhs_column = tableau->num_cols - 1;
 
-    fprintf(file, "\\begin{frame}{");
-    presentation_tex_text(
-        file,
-        title != NULL ? title : "Simplex Tableau"
-    );
+    fprintf(file, "\\section{");
+    presentation_tex_text(file, title != NULL ? title : "Simplex Tableau");
     fprintf(file, "}\n");
-    fprintf(file, "\\scriptsize\n");
-    fprintf(file, "\\centering\n");
-    fprintf(file, "\\resizebox{\\textwidth}{!}{%%\n");
+    fprintf(file, "\\begin{center}\n");
+    fprintf(file, "\\small\n");
+    fprintf(file, "\\setlength{\\tabcolsep}{8pt}\n");
 
     //One column for label row and one for each column of the tableau
     fprintf(file, "\\begin{tabular}{c");
@@ -220,8 +201,8 @@ void presentation_tableau(FILE *file,
     }
 
     fprintf(file, "\\bottomrule\n");
-    fprintf(file, "\\end{tabular}}\n");
-    fprintf(file, "\\end{frame}\n\n");
+    fprintf(file, "\\end{tabular}\n");
+    fprintf(file, "\\end{center}\n\n");
 }
 
 static void presentation_print_variable(FILE *file,
@@ -288,7 +269,7 @@ void presentation_original_problem(FILE *file,
     const char *optimization =
         problem->objective_function->type == MAXIMIZE ? "\\max" : "\\min";
 
-    fputs("\\begin{frame}[allowframebreaks]{Original Problem}\n", file);
+    fputs("\\section{Original Problem}\n", file);
     fputs("\\small\n\\textbf{Problem Name:} ", file);
 
     presentation_tex_text(
@@ -344,10 +325,10 @@ void presentation_original_problem(FILE *file,
         fputs(" & \\geq & 0 \\\\\n", file);
     }
 
-    fputs("\\end{array}\n\\]\n\\end{frame}\n\n", file);
+    fputs("\\end{array}\n\\]\n\\clearpage\n\n", file);
 }
 
-static void presentation_print_base_solution(FILE *file, const SPTableau *tableau,
+void presentation_print_base_solution(FILE *file, const SPTableau *tableau,
     const SPBaseSolution *solution, const char *label)
 {
     if (solution == NULL) {
@@ -391,7 +372,7 @@ void presentation_solution(FILE *file, const SPTableau *tableau,
         return;
     }
 
-    fprintf(file, "\\begin{frame}{Problem Solution}\n");
+    fprintf(file, "\\section{Problem Solution}\n");
     fprintf(file, "\\small\n");
     fprintf(file, "\\begin{itemize}\n");
 
@@ -468,17 +449,7 @@ void presentation_solution(FILE *file, const SPTableau *tableau,
     }
 
     fprintf(file, "\\end{itemize}\n");
-    fprintf(file, "\\end{frame}\n\n");
-}
-
-//Generates the final slide.
- 
-void presentation_end_slide(FILE *file)
-{
-    fprintf(file, "\\begin{frame}\n");
-    fprintf(file, "\\centering\n");
-    fprintf(file, "{\\Huge Thank you!}\n");
-    fprintf(file, "\\end{frame}\n\n");
+    fprintf(file, "\\clearpage\n\n");
 }
 
 //Writes the end of the LaTeX document.
@@ -490,32 +461,92 @@ void presentation_end(FILE *file)
 
 //Compiles the generated LaTeX document.
  
-int presentation_compile(const char *texFilename)
+static int presentation_path_with_suffix(char *destination,size_t destination_size,
+    const char *tex_filename,const char *suffix)
 {
-    char command[512];
+    if (destination == NULL || tex_filename == NULL || suffix == NULL) {
+        return -1;
+    }
 
-    snprintf(
-        command,
-        sizeof(command),
-        "pdflatex -interaction=nonstopmode -halt-on-error \"%s\"",
-        texFilename
-    );
+    const char *dot = strrchr(tex_filename, '.');
+    const char *slash = strrchr(tex_filename, '/');
 
-    return system(command);
+    size_t base_length = strlen(tex_filename);
+    if (dot != NULL && (slash == NULL || dot > slash)) {
+        base_length = (size_t)(dot - tex_filename);
+    }
+
+    int written = snprintf(destination, destination_size, "%.*s%s", 
+        (int)base_length, tex_filename, suffix);
+
+    if (written < 0 || (size_t)written >= destination_size) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int presentation_compile(const char *tex_filename)
+{
+    if (tex_filename == NULL) {
+        return -1;
+    }
+
+    char pdf_filename[1024];
+    if (presentation_path_with_suffix(pdf_filename, sizeof(pdf_filename), tex_filename, ".pdf") != 0) {
+        fprintf(stderr, "Error: TEX filename is too long.\n");
+        return -1;
+    }
+
+    char command[2048];
+    int written = snprintf(command, sizeof(command),
+        "pdflatex -interaction=nonstopmode -halt-on-error \"%s\"", tex_filename);
+
+    if (written < 0 || (size_t)written >= sizeof(command)) {
+        fprintf(stderr, "Error: Compile command is too long.\n");
+        return -1;
+    }
+
+    int status = system(command);
+    if (status != 0) {
+        fprintf(stderr, "Error: Failed to generate PDF from TEX file.\n");
+        return status;
+    }
+
+    const char *auxiliary_suffixes[] = {".aux", ".log", ".out", ".toc", 
+        ".nav", ".snm", ".vrb", ".synctex.gz"};
+
+    for (size_t i = 0; i < sizeof(auxiliary_suffixes) / sizeof(auxiliary_suffixes[0]);++i) {
+        char auxiliary_filename[1024];
+
+        if (presentation_path_with_suffix(auxiliary_filename,sizeof(auxiliary_filename),
+                tex_filename, auxiliary_suffixes[i]) == 0) {
+            remove(auxiliary_filename);
+        }
+    }
+
+    return presentation_open_pdf(pdf_filename);
 }
 
 //Opens the generated PDF in presentation mode.
  
-int presentation_open_pdf(const char *pdfFilename)
+int presentation_open_pdf(const char *pdf_filename)
 {
-    char command[512];
+    if (pdf_filename == NULL) {
+        return -1;
+    }
 
-    snprintf(
-        command,
-        sizeof(command),
-        "evince -s \"%s\" &",
-        pdfFilename
-    );
+    char command[2048];
+    int written = snprintf(command, sizeof(command),
+        "if command -v evince >/dev/null 2>&1; then evince --presentation \"%s\" >/dev/null 2>&1 & "
+        "elif command -v okular >/dev/null 2>&1; then okular --presentation \"%s\" >/dev/null 2>&1 & "
+        "else echo 'Error: neither Evince nor Okular is installed.' >&2; "
+        "exit 1; fi",pdf_filename, pdf_filename);
+
+    if (written < 0 || (size_t)written >= sizeof(command)) {
+        fprintf(stderr, "Error: PDF filename is too long.\n");
+        return -1;
+    }
 
     return system(command);
 }
