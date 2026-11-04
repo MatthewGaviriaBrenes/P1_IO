@@ -7,6 +7,7 @@
 
 #include "simplex/LPDefinition.h"
 #include "simplex/SPTableau.h"
+#include "tex/presentation.h"
 
 #define MIN_FIELDS 2
 #define MAX_FIELDS 15
@@ -241,6 +242,8 @@ static const char *status_text(enum SPTableauStatus status) {
     }
 }
 
+// Generate a report of the solved Simplex problem, save it as PDF and use evince to open it.
+// TODO: Matthew Gaviria - Integrate generation of PDF with UI.
 static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      const char *problem_name, const char *status,
                                      gboolean include_intermediate, size_t steps,

@@ -27,7 +27,8 @@ SIMPLEX_SRC = \
       src/simplex/LPDefinition.c \
       src/simplex/SPTableau.c \
       src/simplex/SPBaseSolution.c \
-      src/simplex/SPMultiSolutions.c
+      src/simplex/SPMultiSolutions.c\
+      src/tex/presentation.c
 
 $(GUI_TARGET): src/main.c $(SIMPLEX_SRC)
 	$(CC) $(CFLAGS) $(GTK_CFLAGS) -o $(GUI_TARGET) \
