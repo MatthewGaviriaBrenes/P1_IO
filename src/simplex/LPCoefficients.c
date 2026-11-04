@@ -1,7 +1,7 @@
 // LPCoefficients.c
 
-#include <stdbool.h>
 #include "LPCoefficients.h"
+#include <stdbool.h>
 
 // Create a new CoefficientsSet struct with the given length and allocate memory for the coefficients array.
 // Initializes the coefficients array to zero.
