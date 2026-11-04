@@ -19,7 +19,7 @@
   </object>
   <object class="GtkWindow" id="main_window">
     <property name="can-focus">False</property>
-    <property name="title">Solucionador Simplex — Programación Lineal</property>
+    <property name="title">Simplex Solver — Linear Programming</property>
     <property name="window-position">center</property>
     <property name="default-width">1050</property>
     <property name="default-height">760</property>
@@ -34,7 +34,7 @@
           <object class="GtkLabel" id="title_label">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label">SOLUCIONADOR SÍMPLEX</property>
+            <property name="label">SIMPLEX SOLVER</property>
             <property name="xalign">0</property>
             <attributes>
               <attribute name="weight" value="bold"/>
@@ -51,7 +51,7 @@
           <object class="GtkLabel" id="subtitle_label">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label">Defina el modelo de programación lineal. En esta versión se procesan restricciones ≤.</property>
+            <property name="label">Define the LP model. In this version, only ≤ is accepted.</property>
             <property name="wrap">True</property>
             <property name="xalign">0</property>
           </object>
@@ -89,7 +89,7 @@
                           <object class="GtkLabel" id="problem_name_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Nombre del problema:</property>
+                            <property name="label">Problem's name:</property>
                             <property name="xalign">0</property>
                           </object>
                           <packing>
@@ -102,7 +102,7 @@
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="hexpand">True</property>
-                            <property name="placeholder-text">Ej. Planificación de producción</property>
+                            <property name="placeholder-text">Ej. Dakota Chairs </property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
@@ -139,7 +139,7 @@
                           <object class="GtkLabel" id="restricciones_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Restricciones (2–15):</property>
+                            <property name="label">Restrictions (2–15):</property>
                             <property name="xalign">0</property>
                           </object>
                           <packing>
@@ -162,7 +162,7 @@
                         </child>
                         <child>
                           <object class="GtkButton" id="generate_fields_button">
-                            <property name="label">Actualizar campos</property>
+                            <property name="label">Update fields</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
@@ -211,7 +211,7 @@
                               <object class="GtkLabel" id="direction_label">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label">Objetivo:</property>
+                                <property name="label">Objetive:</property>
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
@@ -226,8 +226,8 @@
                                 <property name="can-focus">False</property>
                                 <property name="active">0</property>
                                 <items>
-                                  <item id="max" translatable="yes">Maximizar</item>
-                                  <item id="min" translatable="yes">Minimizar</item>
+                                  <item id="max" translatable="yes">Maximize</item>
+                                  <item id="min" translatable="yes">Minimize</item>
                                 </items>
                               </object>
                               <packing>
@@ -247,7 +247,7 @@
                           <object class="GtkLabel" id="objective_help_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Ingrese los nombres de variables y sus coeficientes en los campos siguientes.</property>
+                            <property name="label">Enter the name of variables and their coefficients on the following spaces.</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
                           </object>
@@ -307,7 +307,7 @@
                           <object class="GtkLabel" id="constraints_help_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Los lados derechos deben ser números reales mayores o iguales a cero. En esta versión solo se admite ≤.</property>
+                            <property name="label">The right-handed numbers must be positives equal or above to 0. This version only works with ≤.</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
                           </object>
@@ -360,7 +360,7 @@
               <object class="GtkLabel" id="model_tab_label">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label">Modelo</property>
+                <property name="label">Model</property>
               </object>
               <packing>
                 <property name="tab-fill">False</property>
@@ -385,7 +385,7 @@
                         <property name="spacing">10</property>
                         <child>
                           <object class="GtkCheckButton" id="show_intermediate_check">
-                            <property name="label">Incluir todas las tablas intermedias del algoritmo</property>
+                            <property name="label">Include all middle tables of the algorithm</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">False</property>
@@ -401,7 +401,7 @@
                           <object class="GtkLabel" id="cover_help_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Datos para la portada del documento PDF</property>
+                            <property name="label">Front page data for the PDF</property>
                             <property name="xalign">0</property>
                           </object>
                           <packing>
@@ -421,7 +421,7 @@
                               <object class="GtkLabel" id="members_label">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label">Integrantes:</property>
+                                <property name="label">Members:</property>
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
@@ -434,7 +434,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="placeholder-text">Nombres de los integrantes</property>
+                                <property name="placeholder-text">Members name</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -445,7 +445,7 @@
                               <object class="GtkLabel" id="course_label">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label">Curso:</property>
+                                <property name="label">Course:</property>
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
@@ -458,7 +458,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="placeholder-text">Nombre del curso</property>
+                                <property name="placeholder-text">Courses name</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -469,7 +469,7 @@
                               <object class="GtkLabel" id="semester_label">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label">Semestre:</property>
+                                <property name="label">Semester:</property>
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
@@ -482,7 +482,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="placeholder-text">Ej. II semestre 2026</property>
+                                <property name="placeholder-text">Ej. II semester 2026</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -518,7 +518,7 @@
                   <object class="GtkLabel" id="output_status_label">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label">El programa generará el archivo .tex, compilará el PDF y lo abrirá con el visor configurado.</property>
+                    <property name="label">The program will generate a .tex file, compile the PDF and open the default aplication.</property>
                     <property name="wrap">True</property>
                     <property name="xalign">0</property>
                   </object>
@@ -537,7 +537,7 @@
               <object class="GtkLabel" id="output_tab_label">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label">Reporte PDF</property>
+                <property name="label">PDF Report </property>
               </object>
               <packing>
                 <property name="position">1</property>
@@ -570,7 +570,7 @@
             <property name="spacing">8</property>
             <child>
               <object class="GtkButton" id="clear_button">
-                <property name="label">Limpiar</property>
+                <property name="label">Clean</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">False</property>
@@ -584,7 +584,7 @@
             </child>
             <child>
               <object class="GtkButton" id="solve_button">
-                <property name="label">Resolver y generar PDF</property>
+                <property name="label">Solve and generate PDF</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
