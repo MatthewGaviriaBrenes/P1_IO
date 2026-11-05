@@ -1,9 +1,9 @@
 // LPConstraints.c
-
 #include "LPConstraints.h"
+#include <stdbool.h>
 
 const size_t MINIMUM_CONSTRAINTS = 2; // Minimum number of constraints
-const size_t MAXIMUM_CONSTRAINTS = 25; // Maximum number of constraints
+const size_t MAXIMUM_CONSTRAINTS = 15; // Maximum number of constraints
 
 
 // Create a new LPConstraints struct with the given number of constraints and decision variables.
@@ -62,7 +62,7 @@ void lp_constraints_free(LPConstraints *constraintList) {
     if (constraintList) {
         for (size_t i = 0; i < constraintList->count; i++) {
             lp_coefficients_free(constraintList->coeff_sets[i]); // Free each LPCoefficients struct
-            free(constraintList->coeff_sets[i]); // Free the LPCoefficients struct itself
+            //free(constraintList->coeff_sets[i]); // Free the LPCoefficients struct itself
         }
         free(constraintList->coeff_sets); // Free the array of LPCoefficients pointers
         free(constraintList->types);      // Free the array of constraint types
@@ -220,7 +220,6 @@ void lp_constraints_print_constraint_definiton(const LPConstraints *constraintLi
         return;
     }
     printf("Constraint %zu:  ", index + 1);
-    bool firstNonZeroCoeffPrinted = false; // Flag to track if the first non-zero coefficient has been printed for formatting purposes.
 
     // Print the coefficients for the constraint
     lp_coefficients_print(constraintList->coeff_sets[index], decision_vars); 
