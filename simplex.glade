@@ -139,7 +139,7 @@
                           <object class="GtkLabel" id="restricciones_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Restrictions (2–15):</property>
+                            <property name="label">Constraints (2–15):</property>
                             <property name="xalign">0</property>
                           </object>
                           <packing>
@@ -307,7 +307,7 @@
                           <object class="GtkLabel" id="constraints_help_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">The right-handed numbers must be positives equal or above to 0. This version only works with ≤.</property>
+                            <property name="label">Specify the coefficients for the decision variables (in order), the operator, and the expected bound (RHS) for each constraint. This version only works with ≤.</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
                           </object>
