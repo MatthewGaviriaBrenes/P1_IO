@@ -268,25 +268,37 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     presentation_simplex_slide(f);
     
     //Los nombres de los usuarios del programa
-    fprintf(f, "\\section*{Problema}\n"
-               "\\textbf{Nombre:} %s\\\\\n\\textbf{Curso:} %s\\\\\n"
-               "\\textbf{Integrantes:} %s\\\\\n\\textbf{Semestre:} %s\n"
+    fprintf(f, "\\section*{Problem}\n"
+               "\\textbf{Name:} %s\\\\\n\\textbf{Course:} %s\\\\\n"
+               "\\textbf{Members:} %s\\\\\n\\textbf{Semester:} %s\n"
                "\\section*{Mathematical Model}\n", safe_name, safe_course,
                safe_members, safe_semester);
     fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
         double a = lp->objective_function->coeffs->coefficients[j];
-        fprintf(f, "%s%.4g %s", (j && a >= 0) ? "+" : "", a,
-                lp->decision_variables->names[j] ? lp->decision_variables->names[j] : "x");
-        if (j + 1 < lp->num_decision_vars) fprintf(f, " ");
+        if (a == 0.0) {
+            continue;
+        }
+        if (a < 0.0) {
+            fprintf(f, j == 0 ? "-" : " - ");
+        } else if (j > 0) {
+            fprintf(f, " + ");
+        }
+        fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
     }
-    fprintf(f, " \\]\n\\begin{align*}\n");
+    fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.}\n");
     for (size_t i = 0; i < lp->constraints->count; ++i) {
         for (size_t j = 0; j < lp->num_decision_vars; ++j) {
             double a = lp->constraints->coeff_sets[i]->coefficients[j];
-            fprintf(f, "%s%.4g %s", (j && a >= 0) ? "+" : "", a,
-                    lp->decision_variables->names[j] ? lp->decision_variables->names[j] : "x");
-            if (j + 1 < lp->num_decision_vars) fprintf(f, " ");
+            if (a == 0.0) {
+                continue;
+            }
+            if (a < 0.0) {
+                fprintf(f, j == 0 ? "-" : " - ");
+            } else if (j > 0) {
+                fprintf(f, " + ");
+            }
+            fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
         }
         fprintf(f, " &\\le %.4g \\\\\n", lp->constraints->rhs_values[i]);
     }
