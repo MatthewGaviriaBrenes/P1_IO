@@ -11,30 +11,29 @@ LPDefinition *lp_definition_create(
     LPConstraints *constraints
 ) {
     if (decision_vars == NULL) {
-        printf("Error: LPDecisionVars struct is NULL.\n");
+        //printf("Error: LPDecisionVars struct is NULL.\n");
         return NULL;
     }
     if (objective_func == NULL) {
-        printf("Error: LPObjectiveFunc struct is NULL.\n");
+        //printf("Error: LPObjectiveFunc struct is NULL.\n");
         return NULL;
     }
     if (constraints == NULL) {
-        printf("Error: LPConstraints struct is NULL.\n");
+        //printf("Error: LPConstraints struct is NULL.\n");
         return NULL;
     }
 
     // Number of decision variables and constraints must match across the LPDefinition components.
     if (decision_vars->length != objective_func->num_dec_vars || 
         decision_vars->length != constraints->num_dec_vars) {
-        printf("Error: Number of decision variables used for objective function and/or constraints does not match.\n");
-        printf("Expected: %zu, Objective Function: %zu, LPConstraints: %zu\n", 
-            decision_vars->length, objective_func->num_dec_vars, constraints->num_dec_vars);
+        //printf("Error: Number of decision variables used for objective function and/or constraints does not match.\n");
+        //printf("Expected: %zu, Objective Function: %zu, LPConstraints: %zu\n", decision_vars->length, objective_func->num_dec_vars, constraints->num_dec_vars);
         return NULL;
     }
 
     LPDefinition *lp_def = (LPDefinition *)malloc(sizeof(LPDefinition));
     if (!lp_def) {
-        printf("Error: Memory allocation failed for LPDefinition struct.\n");
+        //printf("Error: Memory allocation failed for LPDefinition struct.\n");
         return NULL;
     }
 
@@ -57,34 +56,34 @@ void lp_definition_free(LPDefinition *lp_def) {
 }
 
 // Print the details of the LPDefinition for debugging purposes.
-void lp_definition_print(const LPDefinition *lp_def) {
-    if (lp_def == NULL) {
-        printf("Error: LPDefinition struct is NULL.\n");
-        return;
-    }
+// void lp_definition_print(const LPDefinition *lp_def) {
+//     if (lp_def == NULL) {
+//         printf("Error: LPDefinition struct is NULL.\n");
+//         return;
+//     }
 
-    printf("--- LP Definition ---\n");
-    printf("Number of Decision Variables: %zu\n", lp_def->num_decision_vars);
-    printf("Number of Constraints: %zu\n", lp_def->num_constraints);
+//     printf("--- LP Definition ---\n");
+//     printf("Number of Decision Variables: %zu\n", lp_def->num_decision_vars);
+//     printf("Number of Constraints: %zu\n", lp_def->num_constraints);
 
-    // Print decision variables
-    if (lp_def->decision_variables) {
-        lp_decisionvars_print(lp_def->decision_variables);
-    } else {
-        printf("Warning: LPDecisionVars struct is NULL.\n");
-    }
+//     // Print decision variables
+//     if (lp_def->decision_variables) {
+//         lp_decisionvars_print(lp_def->decision_variables);
+//     } else {
+//         printf("Warning: LPDecisionVars struct is NULL.\n");
+//     }
 
-    // Print objective function
-    if (lp_def->objective_function) {
-        lp_objectivefunc_print(lp_def->objective_function, lp_def->decision_variables);
-    } else {
-        printf("Warning: LPObjectiveFunc struct is NULL.\n");
-    }
+//     // Print objective function
+//     if (lp_def->objective_function) {
+//         lp_objectivefunc_print(lp_def->objective_function, lp_def->decision_variables);
+//     } else {
+//         printf("Warning: LPObjectiveFunc struct is NULL.\n");
+//     }
 
-    // Print constraints
-    if (lp_def->constraints) {
-        constrainst_print_all_constraints(lp_def->constraints, lp_def->decision_variables);
-    } else {
-        printf("Warning: LPConstraints struct is NULL.\n");
-    }
-}
+//     // Print constraints
+//     if (lp_def->constraints) {
+//         constrainst_print_all_constraints(lp_def->constraints, lp_def->decision_variables);
+//     } else {
+//         printf("Warning: LPConstraints struct is NULL.\n");
+//     }
+// }

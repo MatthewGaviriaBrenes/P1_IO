@@ -253,8 +253,6 @@ static const char *status_text(enum SPTableauStatus status) {
     }
 }
 
-// Generate a report of the solved Simplex problem, save it as PDF and use evince to open it.
-// TODO: Matthew Gaviria - Integrate generation of PDF with UI.
 static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      const char *problem_name, const char *status,
                                      gboolean include_intermediate, size_t steps,
@@ -277,11 +275,11 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                "\\title{Informe del método Simplex}\\author{%s}\\date{%s}\n"
                "\\begin{document}\\maketitle\n",safe_members, safe_semester);*/
     
-    //Los nombres del grupo responsable del programa.
+    // Document Cover
     presentation_preamble(f);
     presentation_cover(f);
     
-    //Explicacion de simplex
+    // Explain the Simplex Algorithm
     presentation_simplex_slide(f);
     
     //Los nombres de los usuarios del programa

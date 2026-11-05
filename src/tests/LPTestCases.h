@@ -8,7 +8,7 @@
 
 // Test case - PyV Door and Window Factory
 // Decision vars: doors, windows
-// Objective function: Minimize Z = 3*doors + 5*windows
+// Objective function: Maximize Z = 3*doors + 5*windows
 // Constraints:
 // 1. 1*doors <= 4
 // 2. 2*windows <= 12

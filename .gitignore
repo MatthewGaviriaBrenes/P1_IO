@@ -3,5 +3,6 @@ out/
 *.tex
 *.code-workspace
 informe_simplex.fdb_latexmk
-.gitignore
 informe_simplex.pdf
+informe_simplex.tex
+
