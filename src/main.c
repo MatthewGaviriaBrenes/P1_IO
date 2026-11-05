@@ -208,6 +208,8 @@ static char *latex_escape(const char *input) {
 
 typedef struct { double **cells; size_t rows; size_t cols; } TableauSnapshot;
 
+typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row; double *min_ratios;} TableauStepSnapshot;
+
 static void free_snapshot(TableauSnapshot *snap) {
     if (!snap || !snap->cells) return;
     for (size_t r = 0; r < snap->rows; ++r) free(snap->cells[r]);
@@ -258,7 +260,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      gboolean include_intermediate, size_t steps,
                                      enum SPTableauStatus final_status,
                                      const TableauSnapshot *initial_snapshot,
-                                     const TableauSnapshot *history, size_t history_count) {
+                                     const TableauStepSnapshot *history, size_t history_count) {
     const char *tex_path = "informe_simplex.tex";
     FILE *f = g_fopen(tex_path, "w");
     if (!f) return FALSE;
@@ -288,6 +290,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                "\\textbf{Members:} %s\\\\\n\\textbf{Semester:} %s\n"
                "\\section*{Mathematical Model}\n", safe_name, safe_course,
                safe_members, safe_semester);
+    /*fprintf(f, "\\section*{Mathematical Model}\n");*/
     fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
         double a = lp->objective_function->coeffs->coefficients[j];
@@ -325,11 +328,15 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
         fprintf(f, "\\section*{Middle tables}\nTable states were saved during the iterations\\par\n");
         for (size_t k = 0; k < history_count; ++k) {
             char caption[64];
-            g_snprintf(caption, sizeof(caption), "After step %zu", k + 1);
-            write_tableau(f, spt, &history[k], caption);
+            g_snprintf(caption, sizeof(caption), "Pivot step %zu", k + 1);
+            SPTableau snapshot_tableau = *spt;
+            snapshot_tableau.tableau = history[k].tableau.cells;
+            presentation_intermediate_tableau(f, &snapshot_tableau, 
+                caption, history[k].pivot_column,history[k].pivot_row, 
+                history[k].min_ratios);
         }
     }
-    fprintf(f, "\\section*{Result}\n%s\\par\n", status);
+    fprintf(f, "\\section*{Result}\n%s\\par\nSteps performed: %zu\\par\n", status, steps);
 
     TableauSnapshot final_snapshot = {0};
     if (save_snapshot(&final_snapshot, spt)) {
@@ -373,7 +380,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
         gchar *fallback[] = { (gchar *)"xdg-open", pdf_path, NULL };
         if (!g_spawn_async(NULL, fallback, NULL, G_SPAWN_SEARCH_PATH,
                            NULL, NULL, NULL, &error)) {
-            gchar *msg = g_strdup_printf("PDF created on %s",
+            gchar *msg = g_strdup_printf("PDF created on %s : %s",
                                          pdf_path, error ? error->message : "no way to open PDF.");
             set_status(msg);
             g_free(msg);
@@ -463,7 +470,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
 
     gboolean include_intermediate = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(app.show_intermediate_check));
     TableauSnapshot initial_snapshot = {0};
-    TableauSnapshot *history = include_intermediate ? calloc(MAX_SIMPLEX_STEPS, sizeof(*history)) : NULL;
+    TableauStepSnapshot *history = include_intermediate ? calloc(MAX_SIMPLEX_STEPS, sizeof(*history)) : NULL;
     size_t history_count = 0;
     if (!save_snapshot(&initial_snapshot, spt)) {
         free(history); sp_tableau_free(spt); free_model(lp);
@@ -472,11 +479,41 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     size_t steps = 0;
     enum SPTableauStatus result = SPT_STANDBY;
     while (steps < MAX_SIMPLEX_STEPS) {
+        size_t pivot_column = sp_tableau_get_pivot_column(spt);
+        double *min_ratios = NULL;
+        size_t pivot_row = 0;
+
+        if (pivot_column > 0) {
+            min_ratios = sp_tableau_calculate_min_ratios(spt, pivot_column);
+            if (min_ratios != NULL) {
+                pivot_row = sp_tableau_get_pivot_row(spt, pivot_column, min_ratios);
+            }
+        }
+        if (include_intermediate && history && history_count < MAX_SIMPLEX_STEPS && pivot_column > 0) {
+            TableauStepSnapshot *step = &history[history_count];
+            if (save_snapshot(&step->tableau, spt)) {
+                step->pivot_column = pivot_column;
+                step->pivot_row = pivot_row < spt->num_rows ? pivot_row : 0;
+                if (min_ratios != NULL) {
+                    step->min_ratios = malloc(spt->num_rows * sizeof(*step->min_ratios));
+                    if (step->min_ratios != NULL) {
+                        memcpy(step->min_ratios, min_ratios, spt->num_rows * sizeof(*step->min_ratios));
+                    } else {
+                        free_snapshot(&step->tableau);
+                    }
+                }
+                if (min_ratios == NULL || step->min_ratios != NULL) {
+                    ++history_count;
+                }
+            }
+        }
+        free(min_ratios);
+
         result = sp_tableau_solve_step(spt);
         ++steps;
-        if (include_intermediate && history && history_count < MAX_SIMPLEX_STEPS) {
+        /*if (include_intermediate && history && history_count < MAX_SIMPLEX_STEPS) {
             if (save_snapshot(&history[history_count], spt)) ++history_count;
-        }
+        }*/
         if (result == SPT_OPTIMAL_SOLUTION_FOUND ||
             result == SPT_MULTPILE_SOLUTIONS_DETECTED ||
             result == SPT_UNBOUNDED_PROBLEM || result == SPT_DEGENERATED_LOOP ||
@@ -499,7 +536,10 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     g_free(summary);
 
     free_snapshot(&initial_snapshot);
-    for (size_t k = 0; k < history_count; ++k) free_snapshot(&history[k]);
+    for (size_t k = 0; k < history_count; ++k) {
+        free_snapshot(&history[k].tableau); 
+        free(history[k].min_ratios);
+    }
     free(history);
     sp_tableau_free(spt);
     free_model(lp);

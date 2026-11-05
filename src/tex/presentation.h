@@ -22,6 +22,8 @@ void presentation_simplex_slide(FILE *file);
 
 void presentation_tableau(FILE *file, const SPTableau *tableau, const char *title);
 
+void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau, const char *title, size_t pivot_column, size_t pivot_row, const double *min_ratios);
+
 void presentation_original_problem(FILE *file, const char *problem_name, const LPDefinition *problem);
 
 void presentation_print_base_solution(FILE *file, const SPTableau *tableau, const SPBaseSolution *solution, const char *label);
