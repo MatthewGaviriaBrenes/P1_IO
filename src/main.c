@@ -92,7 +92,7 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
     int nv = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(app.variables_spin));
     int nc = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(app.restricciones_spin));
     if (nv < MIN_FIELDS || nv > MAX_FIELDS || nc < MIN_FIELDS || nc > MAX_FIELDS) {
-        show_error("The number of variables and restrictions must be between 2 and 15");
+        show_error("The number of variables and constraints must be between 2 and 15");
         return;
     }
 
@@ -124,7 +124,7 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
     for (int i = 0; i < nc; ++i) {
         GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
         char row_label[32], rhs_default[16];
-        g_snprintf(row_label, sizeof(row_label), "Restriction %d:", i + 1);
+        g_snprintf(row_label, sizeof(row_label), "Constraint %d:", i + 1);
         g_snprintf(rhs_default, sizeof(rhs_default), "%d", i + 1);
         gtk_box_pack_start(GTK_BOX(app.constraints_fields_box), row, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(row), make_label(row_label), FALSE, FALSE, 0);
@@ -134,7 +134,22 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
             app.constraint_coeff_entries[i][j] = make_entry(hint, j == 0 ? "1" : "0");
             gtk_box_pack_start(GTK_BOX(row), app.constraint_coeff_entries[i][j], FALSE, FALSE, 0);
         }
-        gtk_box_pack_start(GTK_BOX(row), make_label("≤"), FALSE, FALSE, 0);
+        GtkWidget *operator_combo = gtk_combo_box_text_new();
+
+        gtk_combo_box_text_append_text(
+            GTK_COMBO_BOX_TEXT(operator_combo), "≤");
+        
+        gtk_combo_box_text_append_text(
+            GTK_COMBO_BOX_TEXT(operator_combo), "≥");
+        
+        gtk_combo_box_text_append_text(
+            GTK_COMBO_BOX_TEXT(operator_combo), "=");
+        
+        gtk_combo_box_set_active(
+            GTK_COMBO_BOX(operator_combo), 0);
+
+        gtk_box_pack_start(
+        GTK_BOX(row), operator_combo, FALSE, FALSE, 0);
         app.constraint_rhs_entries[i] = make_entry("Right side ≥ 0", rhs_default);
         gtk_entry_set_width_chars(GTK_ENTRY(app.constraint_rhs_entries[i]), 10);
         gtk_box_pack_start(GTK_BOX(row), app.constraint_rhs_entries[i], FALSE, FALSE, 0);
@@ -332,7 +347,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                       (gchar *)"-halt-on-error", (gchar *)tex_path, NULL };
     gint exit_status = -1;
     GError *error = NULL;
-    gboolean spawned = g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH,
+    gboolean spawned = g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
                                     NULL, NULL, NULL, NULL, &exit_status, &error);
     if (!spawned || !g_spawn_check_wait_status(exit_status, &error)) {
         gchar *msg = g_strdup_printf("Couldn't compile PDF. Download pdflatex and install it. Source: %s%s%s",
@@ -380,7 +395,7 @@ static void free_model(LPDefinition *lp) {
 static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     (void)button; (void)user_data;
     if (app.nvars < MIN_FIELDS || app.nconstraints < MIN_FIELDS) {
-        show_error("First press <Update fields> to generate variables and restrictions.");
+        show_error("First press <Update fields> to generate variables and constraints.");
         return;
     }
 
@@ -412,14 +427,14 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     LPConstraints *constraints = lp_constraints_create(app.nconstraints, app.nvars);
     if (!constraints) {
         lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-        show_error("Couldn't create restrictions."); return;
+        show_error("Couldn't create constraints."); return;
     }
     for (size_t i = 0; i < app.nconstraints; ++i) {
         double row_values[MAX_FIELDS] = {0}, rhs = 0;
         for (size_t j = 0; j < app.nvars; ++j) {
             if (!parse_entry_number(app.constraint_coeff_entries[i][j], &row_values[j])) {
                 lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-                show_error("Every coefficient from restrictions must have a valid number."); return;
+                show_error("Every coefficient from constraints must have a valid number."); return;
             }
         }
         if (!parse_entry_number(app.constraint_rhs_entries[i], &rhs) || rhs < 0) {
@@ -429,7 +444,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
         LPCoefficients *row = lp_coefficients_create_from_array(app.nvars, row_values);
         if (!row) {
             lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-            show_error("Couldn't create coefficients from restrictions"); return;
+            show_error("Couldn't create coefficients from constraints."); return;
         }
         lp_constraints_add_constraint(constraints, row, LE, rhs);
         lp_coefficients_free(row);

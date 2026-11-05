@@ -485,7 +485,7 @@ int presentation_compile(const char *tex_filename)
 
     char command[2048];
     int written = snprintf(command, sizeof(command),
-        "pdflatex -interaction=nonstopmode -halt-on-error \"%s\"", tex_filename);
+        "pdflatex -interaction=nonstopmode -halt-on-error \"%s\"  > /dev/null 2>&1", tex_filename);
 
     if (written < 0 || (size_t)written >= sizeof(command)) {
         fprintf(stderr, "Error: Compile command is too long.\n");
