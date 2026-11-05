@@ -2,3 +2,6 @@ out/
 *.exe
 *.tex
 *.code-workspace
+informe_simplex.fdb_latexmk
+.gitignore
+informe_simplex.pdf
