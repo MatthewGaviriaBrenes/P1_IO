@@ -62,7 +62,7 @@ void lp_constraints_free(LPConstraints *constraintList) {
     if (constraintList) {
         for (size_t i = 0; i < constraintList->count; i++) {
             lp_coefficients_free(constraintList->coeff_sets[i]); // Free each LPCoefficients struct
-            free(constraintList->coeff_sets[i]); // Free the LPCoefficients struct itself
+            //free(constraintList->coeff_sets[i]); // Free the LPCoefficients struct itself
         }
         free(constraintList->coeff_sets); // Free the array of LPCoefficients pointers
         free(constraintList->types);      // Free the array of constraint types

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stddef.h>
 
-#include "SPTableau.h"
+#include "../simplex/SPTableau.h"
 
 //Creates and opens the LaTeX file used for the presentation.
 FILE *presentation_create_file(const char *filename);

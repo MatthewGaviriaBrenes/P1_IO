@@ -151,21 +151,7 @@ void presentation_tableau(FILE *file,
         fprintf(file, " & ");
 
         if (col <= tableau->num_decision_vars) {
-            const char *name = NULL;
-
-            if (tableau->lp_def != NULL &&
-                tableau->lp_def->decision_variables != NULL &&
-                tableau->lp_def->decision_variables->names != NULL) {
-                name = tableau->lp_def->decision_variables->names[col - 1];
-            }
-
-            if (name != NULL) {
-                fprintf(file, "\\texttt{");
-                presentation_tex_text(file, name);
-                fprintf(file, "}");
-            } else {
-                fprintf(file, "$x_{%zu}$", col);
-            }
+            fprintf(file, "$x_{%zu}$", col);
         } else if (col <= tableau->num_decision_vars +
                           tableau->num_slack_vars) {
             fprintf(file, "$S_{%zu}$", col - tableau->num_decision_vars);

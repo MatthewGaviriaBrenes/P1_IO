@@ -7,6 +7,7 @@
 
 #include "simplex/LPDefinition.h"
 #include "simplex/SPTableau.h"
+#include "tex/presentation.h"
 
 #define MIN_FIELDS 2
 #define MAX_FIELDS 15
@@ -213,19 +214,13 @@ static gboolean save_snapshot(TableauSnapshot *snap, const SPTableau *spt) {
     return TRUE;
 }
 
-static void write_tableau(FILE *f, const TableauSnapshot *snap, const char *caption) {
-    if (!f || !snap || !snap->cells) return;
-    fprintf(f, "\\subsection*{%s}\n\\scriptsize\\setlength{\\tabcolsep}{3pt}\n\\begin{center}\n\\begin{tabular}{|r|", caption);
-    for (size_t c = 1; c < snap->cols; ++c) fprintf(f, "r|");
-    fprintf(f, "}\\hline\n");
-    for (size_t r = 0; r < snap->rows; ++r) {
-        for (size_t c = 0; c < snap->cols; ++c) {
-            if (c) fprintf(f, " & ");
-            fprintf(f, "$%.4g$", snap->cells[r][c]);
-        }
-        fprintf(f, " \\\\ \\hline\n");
-    }
-    fprintf(f, "\\end{tabular}\n\\end{center}\n\\normalsize\n");
+static void write_tableau(FILE *f, const SPTableau *tableau_template, const TableauSnapshot *snap, const char *caption) {
+    if (!f || !tableau_template || !snap || !snap->cells) return;
+
+    SPTableau snapshot_tableau = *tableau_template;
+    snapshot_tableau.tableau = snap->cells;
+
+    presentation_tableau(f, &snapshot_tableau, caption);
 }
 
 static const char *status_text(enum SPTableauStatus status) {
@@ -241,6 +236,8 @@ static const char *status_text(enum SPTableauStatus status) {
     }
 }
 
+// Generate a report of the solved Simplex problem, save it as PDF and use evince to open it.
+// TODO: Matthew Gaviria - Integrate generation of PDF with UI.
 static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      const char *problem_name, const char *status,
                                      gboolean include_intermediate, size_t steps,
@@ -259,12 +256,17 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n"
                "\\usepackage[spanish]{babel}\n\\usepackage{geometry}\n"
                "\\usepackage{amsmath}\n\\geometry{margin=2cm}\n"
+               "\\usepackage{booktabs}\n"
                "\\title{Informe del método Simplex}\\author{%s}\\date{%s}\n"
-               "\\begin{document}\\maketitle\n\\section*{Problema}\n"
+               "\\begin{document}\\maketitle\n",safe_members, safe_semester);
+    
+    presentation_simplex_slide(f);
+    
+    fprintf(f, "\\section*{Problema}\n"
                "\\textbf{Nombre:} %s\\\\\n\\textbf{Curso:} %s\\\\\n"
                "\\textbf{Integrantes:} %s\\\\\n\\textbf{Semestre:} %s\n"
-               "\\section*{Mathematical Model}\n", safe_members, safe_semester,
-               safe_name, safe_course, safe_members, safe_semester);
+               "\\section*{Mathematical Model}\n", safe_name, safe_course,
+               safe_members, safe_semester);
     fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
         double a = lp->objective_function->coeffs->coefficients[j];
@@ -284,35 +286,26 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     }
     fprintf(f, "x_j &\\ge 0\\quad\\text{for every variable }j\n\\end{align*}\n");
 
-    write_tableau(f, initial_snapshot, "Initial table");
+    write_tableau(f, spt, initial_snapshot, "Initial table");
+
     if (include_intermediate && history_count > 0) {
         fprintf(f, "\\section*{Middle tables}\nTable states were saved during the iterations\\par\n");
         for (size_t k = 0; k < history_count; ++k) {
             char caption[64];
             g_snprintf(caption, sizeof(caption), "After step %zu", k + 1);
-            write_tableau(f, &history[k], caption);
+            write_tableau(f, spt, &history[k], caption);
         }
     }
     fprintf(f, "\\section*{Result}\n%s\\par\n", status);
-    if (final_status == SPT_OPTIMAL_SOLUTION_FOUND || final_status == SPT_MULTPILE_SOLUTIONS_DETECTED) {
-        SPBaseSolution *base = sp_tableau_get_base_sol(spt);
-        fprintf(f, "Objective function value: $Z=%.6g$.\\par\n", sp_tableau_get_z_value(spt));
-        fprintf(f, "\\textbf{Variable values:}\\par\n\\begin{itemize}\n");
-        for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-            double x = sp_tableau_is_base_variable(spt, j + 1)
-                ? sp_tableau_get_base_var_value(spt, j + 1) : 0.0;
-            char *safe_var = latex_escape(lp->decision_variables->names[j] ? lp->decision_variables->names[j] : "x");
-            fprintf(f, "\\item $%s=%.6g$\n", safe_var, x);
-            g_free(safe_var);
-        }
-        fprintf(f, "\\end{itemize}\n");
-        if (base) free(base);
-    }
+
     TableauSnapshot final_snapshot = {0};
     if (save_snapshot(&final_snapshot, spt)) {
-        write_tableau(f, &final_snapshot, "Final Table");
+        write_tableau(f, spt, &final_snapshot, "Final Table");
         free_snapshot(&final_snapshot);
     }
+
+    presentation_solution(f, spt, final_status, NULL);
+
     fprintf(f, "\\end{document}\n");
     fclose(f);
     g_free(safe_name); g_free(safe_members); g_free(safe_course); g_free(safe_semester);
@@ -331,8 +324,16 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
         if (error) g_error_free(error);
         return FALSE;
     }
+
+    const char *auxiliary_files[] = {"informe_simplex.aux", "informe_simplex.log",
+        "informe_simplex.out","informe_simplex.toc","informe_simplex.synctex.gz"};
+
+    for (size_t i = 0; i < sizeof(auxiliary_files) / sizeof(auxiliary_files[0]); ++i) {
+        g_remove(auxiliary_files[i]);
+    }
+
     gchar *pdf_path = g_strdup("informe_simplex.pdf");
-    gchar *open_argv[] = { (gchar *)"evince", pdf_path, NULL };
+    gchar *open_argv[] = { (gchar *)"evince", (gchar *) "--presentation", pdf_path, NULL };
     if (!g_spawn_async(NULL, open_argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
                        NULL, NULL, NULL, &error)) {
         g_clear_error(&error);

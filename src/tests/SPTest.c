@@ -1,6 +1,6 @@
 // SPTest.c
 #include "SPTest.h"
-#include "../simplex/presentation.h"
+#include "tex/presentation.h"
 
 // Base function to run a Simplex test case for a given LPDefinition.
 // To be used as reference for running Simplex tests for various LP cases (maximization, minimization, unbounded, degenerate, multiple solutions, etc.).
