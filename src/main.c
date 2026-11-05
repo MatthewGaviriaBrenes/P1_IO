@@ -290,7 +290,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                "\\textbf{Members:} %s\\\\\n\\textbf{Semester:} %s\n"
                "\\section*{Mathematical Model}\n", safe_name, safe_course,
                safe_members, safe_semester);
-    /*fprintf(f, "\\section*{Mathematical Model}\n");*/
+    //fprintf(f, "\\section*{Mathematical Model}\n");
     fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
         double a = lp->objective_function->coeffs->coefficients[j];
