@@ -134,17 +134,11 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
 enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt);
 
 // Print the current state of the tableau to the console for debugging and visualization purposes.
-void sp_tableau_print_tableau(const SPTableau *spt);
+// void sp_tableau_print_tableau(const SPTableau *spt);
 
 // Print the current state of the BS (Base Solution) for the provided SPTableau.
 // Name of decision variables are included in the output if included in the SPT's LP definition.
-void sp_tableau_print_base(const SPTableau *spt);
-
-
-//TODO: List of functions to add later...
-/* 
-- TBD...
-*/
+// void sp_tableau_print_base(const SPTableau *spt);
 
 
 #endif

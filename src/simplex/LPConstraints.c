@@ -10,17 +10,17 @@ const size_t MAXIMUM_CONSTRAINTS = 15; // Maximum number of constraints
 // Ensures that constraints have the correct number of coefficients for the decision variables.
 LPConstraints *lp_constraints_create(size_t count, size_t num_dec_vars) {
     if (count < MINIMUM_CONSTRAINTS || count > MAXIMUM_CONSTRAINTS) {
-        printf("Error: Invalid number of constraints specified. Must be between %zu and %zu.\n", MINIMUM_CONSTRAINTS, MAXIMUM_CONSTRAINTS);
+        //printf("Error: Invalid number of constraints specified. Must be between %zu and %zu.\n", MINIMUM_CONSTRAINTS, MAXIMUM_CONSTRAINTS);
         return NULL;
     } 
     if (num_dec_vars < MINIMUM_DECISION_VARS || num_dec_vars > MAXIMUM_DECISION_VARS) {
-        printf("Error: Invalid number of decision variables specified. Must be between %zu and %zu.\n", MINIMUM_DECISION_VARS, MAXIMUM_DECISION_VARS);
+        //printf("Error: Invalid number of decision variables specified. Must be between %zu and %zu.\n", MINIMUM_DECISION_VARS, MAXIMUM_DECISION_VARS);
         return NULL;
     }
 
     LPConstraints *constraintList = (LPConstraints *)malloc(sizeof(LPConstraints));
     if (!constraintList) {
-        printf("Error: Memory allocation failed for LPConstraints struct.\n");
+        //printf("Error: Memory allocation failed for LPConstraints struct.\n");
         return NULL;
     }
 
@@ -30,14 +30,14 @@ LPConstraints *lp_constraints_create(size_t count, size_t num_dec_vars) {
 
     constraintList->coeff_sets = (LPCoefficients **)malloc(count * sizeof(LPCoefficients *));
     if (!constraintList->coeff_sets) {
-        printf("Error: Memory allocation failed for coefficient sets.\n");
+        //printf("Error: Memory allocation failed for coefficient sets.\n");
         free(constraintList);
         return NULL;
     }
 
     constraintList->types = (enum LPConstraintType *)malloc(count * sizeof(enum LPConstraintType));
     if (!constraintList->types) {
-        printf("Error: Memory allocation failed for constraint types.\n");
+        //printf("Error: Memory allocation failed for constraint types.\n");
         free(constraintList->coeff_sets);
         free(constraintList);
         return NULL;
@@ -45,7 +45,7 @@ LPConstraints *lp_constraints_create(size_t count, size_t num_dec_vars) {
 
     constraintList->rhs_values = (double *)malloc(count * sizeof(double));
     if (!constraintList->rhs_values) {
-        printf("Error: Memory allocation failed for RHS values.\n");
+        //printf("Error: Memory allocation failed for RHS values.\n");
         free(constraintList->types);
         free(constraintList->coeff_sets);
         free(constraintList);
@@ -76,33 +76,33 @@ void lp_constraints_free(LPConstraints *constraintList) {
 // Caller is responsible for ensuring that the coefficients array in the LPCoefficients struct is valid and has the correct length.
 void lp_constraints_add_constraint(LPConstraints *constraintList, const LPCoefficients *coeffs, enum LPConstraintType type, double rhs_value) {
     if (constraintList == NULL) {
-        printf("Error: LPConstraints struct is NULL.\n");
+        //printf("Error: LPConstraints struct is NULL.\n");
         return;
     }
     if (coeffs == NULL) {
-        printf("Error: LPCoefficients struct is NULL.\n");
+        //printf("Error: LPCoefficients struct is NULL.\n");
         return;
     }
     if (coeffs->coefficients == NULL) {
-        printf("Error: Array of coefficients in LPCoefficients struct is NULL.\n");
+        //printf("Error: Array of coefficients in LPCoefficients struct is NULL.\n");
         return;
     }
     if (type < LE || type > GE) {
-        printf("Error: Invalid constraint type specified.\n");
+        //printf("Error: Invalid constraint type specified.\n");
         return;
     }
     if (constraintList->count >= constraintList->max_count) {
-        printf("Error: Cannot add more constraints. Maximum limit reached.\n");
+        //printf("Error: Cannot add more constraints. Maximum limit reached.\n");
         return;
     }
     if (coeffs->length != constraintList->num_dec_vars) {
-        printf("Error: LPCoefficients length does not match the number of decision variables.\n");
+        //printf("Error: LPCoefficients length does not match the number of decision variables.\n");
         return;
     }
 
     LPCoefficients *newCoeffs = lp_coefficients_create_from_array(coeffs->length, coeffs->coefficients);
     if (newCoeffs == NULL) {
-        printf("Error: Memory allocation failed for new coefficients.\n");
+        //printf("Error: Memory allocation failed for new coefficients.\n");
         return;
     }
 
@@ -120,27 +120,27 @@ void lp_constraints_add_constraint(LPConstraints *constraintList, const LPCoeffi
 // Caller is responsible for ensuring that the coefficients array in the LPCoefficients struct is valid and has the correct length.
 void lp_constraints_set_coeffs(LPConstraints *constraintList, size_t index, const LPCoefficients *newCoeffs, enum LPConstraintType newType, double newRHS) {
     if (constraintList == NULL) {
-        printf("Error: LPConstraints struct is NULL.\n");
+        //printf("Error: LPConstraints struct is NULL.\n");
         return;
     }
     if (index >= constraintList->count) {
-        printf("Error: Index out of bounds when setting coefficients for constraint.\n");
+        //printf("Error: Index out of bounds when setting coefficients for constraint.\n");
         return;
     }
     if (newCoeffs == NULL) {
-        printf("Error: LPCoefficients struct is NULL.\n");
+        //printf("Error: LPCoefficients struct is NULL.\n");
         return;
     }
     if (newCoeffs->coefficients == NULL) {
-        printf("Error: Array of coefficients in LPCoefficients struct is NULL.\n");
+        //printf("Error: Array of coefficients in LPCoefficients struct is NULL.\n");
         return;
     }
     if (newCoeffs->length != constraintList->num_dec_vars) {
-        printf("Error: LPCoefficients length does not match the number of decision variables.\n");
+        //printf("Error: LPCoefficients length does not match the number of decision variables.\n");
         return;
     }
     if (newType < LE || newType > GE) {
-        printf("Error: Invalid constraint type specified.\n");
+        //printf("Error: Invalid constraint type specified.\n");
         return;
     }
     // Overwrite the existing coefficients, type, and RHS value for the constraint at the specified index.
@@ -158,11 +158,11 @@ LPCoefficients lp_constraints_get_constraint_coeffs(const LPConstraints *constra
     LPCoefficients result = {0, NULL}; // Initialize result with default values
 
     if (constraintList == NULL) {
-        printf("Error: LPConstraints struct is NULL.\n");
+        //printf("Error: LPConstraints struct is NULL.\n");
         return result; 
     }
     if (index >= constraintList->count) {
-        printf("Error: Index out of bounds when getting coefficients for constraint.\n");
+        //printf("Error: Index out of bounds when getting coefficients for constraint.\n");
         return result;
     }
     
@@ -172,7 +172,7 @@ LPCoefficients lp_constraints_get_constraint_coeffs(const LPConstraints *constra
     result.coefficients = (double *)malloc(result.length * sizeof(double));
 
     if (!result.coefficients) {
-        printf("Error: Memory allocation failed for coefficients array.\n");
+        //printf("Error: Memory allocation failed for coefficients array.\n");
         result.length = 0; // Reset length to 0 on failure
         return result;
     }
@@ -184,11 +184,11 @@ LPCoefficients lp_constraints_get_constraint_coeffs(const LPConstraints *constra
 // Get the type of constraint at the specified index.
 enum LPConstraintType lp_constraints_get_constraint_type(const LPConstraints *constraintList, size_t index) {
     if (constraintList == NULL) {
-        printf("Error: LPConstraints struct is NULL.\n");
+        //printf("Error: LPConstraints struct is NULL.\n");
         return ERROR; // Return an error value for invalid constraint type
     }
     if (index >= constraintList->count) {
-        printf("Error: Index out of bounds when getting constraint type.\n");
+        //printf("Error: Index out of bounds when getting constraint type.\n");
         return ERROR; // Return an error value for invalid constraint type
     }
     return constraintList->types[index];
@@ -197,11 +197,11 @@ enum LPConstraintType lp_constraints_get_constraint_type(const LPConstraints *co
 // Get the right-hand side (RHS) value of the constraint at the specified index.
 double lp_constraints_get_constraint_rhs(const LPConstraints *constraintList, size_t index) {
    if (constraintList == NULL) {
-        printf("Error: LPConstraints struct is NULL.\n");
+        //printf("Error: LPConstraints struct is NULL.\n");
         return 0.0; // Return a default value for invalid RHS
     }
     if (index >= constraintList->count) {
-        printf("Error: Index out of bounds when getting constraint RHS value.\n");
+        //printf("Error: Index out of bounds when getting constraint RHS value.\n");
         return 0.0; // Return a default value for invalid RHS
     }
     return constraintList->rhs_values[index];
@@ -210,48 +210,48 @@ double lp_constraints_get_constraint_rhs(const LPConstraints *constraintList, si
 // Print the details of a specific constraint at the given index for debugging purposes.
 // DecisionVariable struct can be passed to display the coefficients alongside their corresponding variable names. If NULL, will print generic variable names.
 // Caller is responsible for passing a valid LPDecisionVars struct if they want to display variable names. If NULL, will print generic variable names.
-void lp_constraints_print_constraint_definiton(const LPConstraints *constraintList, size_t index, const LPDecisionVars *decision_vars) {
-    if (constraintList == NULL) {
-        printf("Error: LPConstraints struct is NULL.\n");
-        return;
-    }
-    if (index >= constraintList->count) {
-        printf("Error: Index out of bounds when printing constraint definition.\n");
-        return;
-    }
-    printf("Constraint %zu:  ", index + 1);
+// void lp_constraints_print_constraint_definiton(const LPConstraints *constraintList, size_t index, const LPDecisionVars *decision_vars) {
+//     if (constraintList == NULL) {
+//         //printf("Error: LPConstraints struct is NULL.\n");
+//         return;
+//     }
+//     if (index >= constraintList->count) {
+//         //printf("Error: Index out of bounds when printing constraint definition.\n");
+//         return;
+//     }
+//     //printf("Constraint %zu:  ", index + 1);
 
-    // Print the coefficients for the constraint
-    lp_coefficients_print(constraintList->coeff_sets[index], decision_vars); 
+//     // Print the coefficients for the constraint
+//     lp_coefficients_print(constraintList->coeff_sets[index], decision_vars); 
 
-    // Print the constraint type (operator) and RHS value.
-    switch (constraintList->types[index]) {
-        case LE:
-            printf("<= ");
-            break;
-        case EQ:
-            printf("= ");
-            break;
-        case GE:
-            printf(">= ");
-            break;
-        default:
-            printf("Unknown\n");   
-            return;     // Skip printing RHS value if constraint type is unknown.
-    }
-    printf("%.2f\n", constraintList->rhs_values[index]);
-}
+//     // Print the constraint type (operator) and RHS value.
+//     switch (constraintList->types[index]) {
+//         case LE:
+//             //printf("<= ");
+//             break;
+//         case EQ:
+//             //printf("= ");
+//             break;
+//         case GE:
+//             //printf(">= ");
+//             break;
+//         default:
+//             //printf("Unknown\n");   
+//             return;     // Skip printing RHS value if constraint type is unknown.
+//     }
+//     //printf("%.2f\n", constraintList->rhs_values[index]);
+// }
 
 // Print all constraints in the LPConstraints struct for debugging purposes.
 // DecisionVariable struct can be passed to display the coefficients alongside their corresponding variable names. If NULL, will print generic variable names.
-void constrainst_print_all_constraints(const LPConstraints *constraintList, const LPDecisionVars *decision_vars) {
-    if (constraintList == NULL) {
-        printf("Error: LPConstraints struct is NULL.\n");
-        return;
-    }
-    printf("--- Constraints ---\n");
-    for (size_t i = 0; i < constraintList->count; i++) {
-        lp_constraints_print_constraint_definiton(constraintList, i, decision_vars);
-    }
-    printf("\n");
-}
+// void constrainst_print_all_constraints(const LPConstraints *constraintList, const LPDecisionVars *decision_vars) {
+//     if (constraintList == NULL) {
+//         //printf("Error: LPConstraints struct is NULL.\n");
+//         return;
+//     }
+//     //printf("--- Constraints ---\n");
+//     for (size_t i = 0; i < constraintList->count; i++) {
+//         lp_constraints_print_constraint_definiton(constraintList, i, decision_vars);
+//     }
+//     //printf("\n");
+// }

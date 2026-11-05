@@ -251,8 +251,6 @@ static const char *status_text(enum SPTableauStatus status) {
     }
 }
 
-// Generate a report of the solved Simplex problem, save it as PDF and use evince to open it.
-// TODO: Matthew Gaviria - Integrate generation of PDF with UI.
 static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      const char *problem_name, const char *status,
                                      gboolean include_intermediate, size_t steps,
@@ -275,19 +273,16 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                "\\title{Informe del método Simplex}\\author{%s}\\date{%s}\n"
                "\\begin{document}\\maketitle\n",safe_members, safe_semester);*/
     
-    //Los nombres del grupo responsable del programa.
+    // Document Cover
     presentation_preamble(f);
     presentation_cover(f);
     
-    //Explicacion de simplex
+    // Explain the Simplex Algorithm
     presentation_simplex_slide(f);
     
-    //Los nombres de los usuarios del programa
-    fprintf(f, "\\section*{Problema}\n"
-               "\\textbf{Nombre:} %s\\\\\n\\textbf{Curso:} %s\\\\\n"
-               "\\textbf{Integrantes:} %s\\\\\n\\textbf{Semestre:} %s\n"
-               "\\section*{Mathematical Model}\n", safe_name, safe_course,
-               safe_members, safe_semester);
+    // Name of the Linear Programming problem and its mathematical model
+    fprintf(f, "\\section*{Problem name} %s\n"
+               "\\section*{Mathematical Model}\n", safe_name);
     fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
         double a = lp->objective_function->coeffs->coefficients[j];

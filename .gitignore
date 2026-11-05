@@ -2,3 +2,5 @@ out/
 *.exe
 *.tex
 *.code-workspace
+informe_simplex.pdf
+informe_simplex.tex

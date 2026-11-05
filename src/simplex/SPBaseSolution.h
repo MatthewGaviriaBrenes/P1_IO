@@ -53,7 +53,7 @@ bool sp_base_solution_is_degenerate(const SPBaseSolution *spbs);
 // Print the current state of the BS (Base Solution) for the provided SPBaseSolution.
 // Name of decision variables are included in the output if included in the SPT's LP definition.
 // Otherwise, pass NULL for dec_vars to print generic decision variable names (x1, x2, ...).
-void sp_base_solution_print(const SPBaseSolution *spbs, const LPDecisionVars *dec_vars);
+// void sp_base_solution_print(const SPBaseSolution *spbs, const LPDecisionVars *dec_vars);
 
 
 #endif

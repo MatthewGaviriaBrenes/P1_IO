@@ -34,7 +34,7 @@ LPDefinition *lp_definition_create(
 void lp_definition_free(LPDefinition *lp_def);
 
 // Print the details of the LPDefinition for debugging purposes.
-void lp_definition_print(const LPDefinition *lp_def);
+// void lp_definition_print(const LPDefinition *lp_def);
 
 
 

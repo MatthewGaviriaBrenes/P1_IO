@@ -13,13 +13,13 @@ static const double SPT_FEASIBILITY_TOLERANCE = 1e-9;
 // Create the tableaul for the given LPDefinition struct. Returns a pointer to the created SPTableau struct.
 SPTableau *sp_tableau_create(LPDefinition *lp_def) {
     if (lp_def == NULL) {
-        printf("Error: LPDefinition struct is NULL.\n");
+        //printf("Error: LPDefinition struct is NULL.\n");
         return NULL;
     }
 
     SPTableau *spt = (SPTableau *)malloc(sizeof(SPTableau));
     if (!spt) {
-        printf("Error: Memory allocation failed for SPTableau struct.\n");
+        //printf("Error: Memory allocation failed for SPTableau struct.\n");
         return NULL;
     }
 
@@ -35,7 +35,7 @@ SPTableau *sp_tableau_create(LPDefinition *lp_def) {
     if (!sp_tableau_init_baseline(spt) ||
         !sp_tableau_init_objective_func_row(spt) ||
         !sp_tableau_init_constraints_rows(spt)) {
-        printf("Error: Failed to initialize the tableau.\n");
+        //printf("Error: Failed to initialize the tableau.\n");
         sp_tableau_free(spt);
         return NULL;
     }
@@ -46,7 +46,7 @@ SPTableau *sp_tableau_create(LPDefinition *lp_def) {
 // Helper initialization function: Create the baseline tableau given the LP definition's baseline information.
 bool sp_tableau_init_baseline(SPTableau *spt) {
     if (spt == NULL || spt->lp_def == NULL || spt->lp_def->constraints == NULL) {
-        printf("Error: Tableau or its LP definition is NULL.\n");
+        //printf("Error: Tableau or its LP definition is NULL.\n");
         return false;
     }
 
@@ -73,7 +73,7 @@ bool sp_tableau_init_baseline(SPTableau *spt) {
                 spt->num_artificial_vars++;
                 break;
             default:    
-                printf("Error: Unknown constraint type encountered during tableau initialization.\n");
+                //printf("Error: Unknown constraint type encountered during tableau initialization.\n");
                 return false;
         }
     }
@@ -86,14 +86,14 @@ bool sp_tableau_init_baseline(SPTableau *spt) {
     // Allocate memory for the tableau 2D array
     spt->tableau = (double **)malloc(spt->num_rows * sizeof(double *));
     if (!spt->tableau) {
-        printf("Error: Memory allocation failed for tableau rows.\n");
+        //printf("Error: Memory allocation failed for tableau rows.\n");
         return false;
     }
     // Allocate memory for each row (and column by extension) in the tableau
     for (size_t i = 0; i < spt->num_rows; i++) {
         spt->tableau[i] = (double *)calloc(spt->num_cols, sizeof(double));
         if (!spt->tableau[i]) {
-            printf("Error: Memory allocation failed for tableau columns.\n");
+            //printf("Error: Memory allocation failed for tableau columns.\n");
             for (size_t row = 0; row < i; row++) {
                 free(spt->tableau[row]);
             }
@@ -111,7 +111,7 @@ bool sp_tableau_init_objective_func_row(SPTableau *spt) {
     if (spt == NULL ||  spt->lp_def == NULL ||
         spt->lp_def->objective_function == NULL ||
         spt->lp_def->objective_function->coeffs == NULL) {
-        printf("Error: Tableau or its LP definition or objective function is NULL.\n");
+        //printf("Error: Tableau or its LP definition or objective function is NULL.\n");
         return false;
     }
 
@@ -144,7 +144,7 @@ bool sp_tableau_init_objective_func_row(SPTableau *spt) {
 // Must be called after sp_tableau_init_baseline.
 bool sp_tableau_init_constraints_rows(SPTableau *spt) {
     if (spt == NULL || spt->lp_def == NULL || spt->lp_def->constraints == NULL) {
-        printf("Error: Tableau or its LP definition or constraints is NULL.\n");
+        //printf("Error: Tableau or its LP definition or constraints is NULL.\n");
         return false;
     }
 
@@ -181,7 +181,7 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt) {
                 spt->tableau[1 + i][artificial_start_col + artificial_index++] = 1.0;
                 break;
             default:
-                printf("Error: Unknown constraint type encountered during constraints rows initialization.\n");
+                //printf("Error: Unknown constraint type encountered during constraints rows initialization.\n");
                 return false;
         }
 
@@ -213,13 +213,13 @@ void sp_tableau_free(SPTableau *spt) {
 // Caller is responsible for freeing the memory allocated for the SPBaseSolution struct after use.
 SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return NULL;
     }
 
     SPBaseSolution *spbs = sp_base_solution_create(spt->num_decision_vars, spt->num_slack_vars);
     if (!spbs) {
-        printf("Error: Failed to create BFS from tableau.\n");
+        //printf("Error: Failed to create BFS from tableau.\n");
         return NULL;
     }
 
@@ -241,21 +241,21 @@ SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt) {
 // Does not confirm optimal solution.
 bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs) {
     if (spt == NULL || spt->tableau == NULL || spbs == NULL) {
-        printf("Error: Tableau or its data or BFS is NULL.\n");
+        //printf("Error: Tableau or its data or BFS is NULL.\n");
         return false;
     }
 
     // 1 - BFS variable counts must match the tableau's variable counts.
     if (spbs->num_decision_vars != spt->num_decision_vars 
         || spbs->num_slack_vars != spt->num_slack_vars) {
-        printf("Error: BFS variable counts do not match tableau's variable counts.\n");
+        //printf("Error: BFS variable counts do not match tableau's variable counts.\n");
         return false;
     }
 
     // 2 - Value of all decision variables in the BFS must be non-negative.
     for (size_t col = 1; col <= spt->num_decision_vars; col++) {
         if (spbs->var_values[col] < -SPT_FEASIBILITY_TOLERANCE) {
-            printf("Error: Decision variable at index %zu in BFS is negative.\n", col);
+            //printf("Error: Decision variable at index %zu in BFS is negative.\n", col);
             return false;
         }
     }
@@ -289,11 +289,11 @@ bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs) 
             //     valid = fabs(evaluated_result - constraints->rhs_values[ci]) <= SPT_FEASIBILITY_TOLERANCE;
             //     break;
             default:
-                printf("Error: Unknown constraint type encountered during BFS validation.\n");
+                //printf("Error: Unknown constraint type encountered during BFS validation.\n");
                 return false;
         }
         if (!valid) {
-            printf("Error: Constraint %zu is not satisfied.\n", (ci + 1));
+            //printf("Error: Constraint %zu is not satisfied.\n", (ci + 1));
             return false;
         }
     }
@@ -305,20 +305,20 @@ bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs) 
 // Caller is responsible for freeing the memory allocated for the snapshot after use.
 double **sp_tableau_take_snapshot(const SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return NULL;
     }
 
     double **snapshot = malloc(spt->num_rows * sizeof(*snapshot));
     if (!snapshot) {
-        printf("Error: Memory allocation failed for tableau snapshot rows.\n");
+        //printf("Error: Memory allocation failed for tableau snapshot rows.\n");
         return NULL;
     }
 
     for (size_t i = 0; i < spt->num_rows; i++) {
         snapshot[i] = malloc(spt->num_cols * sizeof(*snapshot[i]));
         if (!snapshot[i]) {
-            printf("Error: Memory allocation failed for tableau snapshot columns.\n");
+            //printf("Error: Memory allocation failed for tableau snapshot columns.\n");
             for (size_t row = 0; row < i; row++) {
                 free(snapshot[row]);
             }
@@ -336,11 +336,11 @@ double **sp_tableau_take_snapshot(const SPTableau *spt) {
 // Returns true if the column is a base column, false otherwise.
 bool sp_tableau_is_base_column(const SPTableau *spt, size_t col_index) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return false;
     }
     if (col_index >= spt->num_cols) {
-        printf("Error: Column index out of bounds when checking for base column.\n");
+        //printf("Error: Column index out of bounds when checking for base column.\n");
         return false;
     }
 
@@ -367,11 +367,11 @@ bool sp_tableau_is_base_column(const SPTableau *spt, size_t col_index) {
 // Returns true if the variable is a base variable, false otherwise.
 bool sp_tableau_is_base_variable(const SPTableau *spt, size_t var_index) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return false;
     }
     if (var_index >= spt->num_cols) {
-        printf("Error: Variable index out of bounds when checking for base variable.\n");
+        //printf("Error: Variable index out of bounds when checking for base variable.\n");
         return false;
     }
     // A base variable corresponds to a base column in the tableau.
@@ -382,17 +382,17 @@ bool sp_tableau_is_base_variable(const SPTableau *spt, size_t var_index) {
 // Return -1 if the variable is not a base variable or if the tableau is NULL. Otherwise, return the value of the base variable.
 double sp_tableau_get_base_var_value(const SPTableau *spt, size_t var_index) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return -1.0;
     }
     if (var_index >= spt->num_cols) {
-        printf("Error: Variable index out of bounds when getting base variable value.\n");
+        //printf("Error: Variable index out of bounds when getting base variable value.\n");
         return -1.0;
     }
 
     // Check if the specified variable is a base variable
     if (!sp_tableau_is_base_column(spt, var_index)) {
-        printf("Error: Specified variable is not a base variable.\n");
+        //printf("Error: Specified variable is not a base variable.\n");
         return -1.0;
     }
 
@@ -408,7 +408,7 @@ double sp_tableau_get_base_var_value(const SPTableau *spt, size_t var_index) {
 // Get the current value of Z in the tableau (row 0, column 0).
 double sp_tableau_get_z_value(const SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return 0.0; // Return 0.0 as a default value in case of error
     }
     return spt->tableau[0][spt->num_cols - 1]; // Return the value of Z from the last column of the objective function row
@@ -418,7 +418,7 @@ double sp_tableau_get_z_value(const SPTableau *spt) {
 // Returns the index of the pivot column, or 0 if no valid pivot column is found (solution found).
 size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return 0;
     }
 
@@ -461,17 +461,17 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
 // If the pivot column value is negative or zero, the ratio is set to -1 (indicating no valid ratio).
 double *sp_tableau_calculate_min_ratios(const SPTableau *spt, size_t pivot_col_index) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return NULL;
     }
     if (pivot_col_index >= spt->num_cols) {
-        printf("Error: Pivot column index out of bounds when calculating minimum ratios.\n");
+        //printf("Error: Pivot column index out of bounds when calculating minimum ratios.\n");
         return NULL;
     }
 
     double *min_ratios = malloc(spt->num_rows * sizeof(double));
     if (!min_ratios) {
-        printf("Error: Memory allocation failed for minimum ratios array.\n");
+        //printf("Error: Memory allocation failed for minimum ratios array.\n");
         return NULL;
     }
 
@@ -500,12 +500,12 @@ double *sp_tableau_calculate_min_ratios(const SPTableau *spt, size_t pivot_col_i
 // Returns the index of the pivot row, or 0 if no valid pivot row is found (unbound problem).
 size_t sp_tableau_get_pivot_row(const SPTableau *spt, size_t pivot_col_index, double *min_ratios) {
     if (spt == NULL || spt->tableau == NULL || min_ratios == NULL) {
-        printf("Error: Tableau, its data, or minimum ratios array is NULL.\n");
+        //printf("Error: Tableau, its data, or minimum ratios array is NULL.\n");
         return SIZE_MAX;
     }
     // Ensure that the pivot column index is within the valid range (no Z or RHS columns).
     if (pivot_col_index < 1 || pivot_col_index >= spt->num_cols - 1) {
-        printf("Error: Pivot column index out of bounds when getting pivot row.\n");
+        //printf("Error: Pivot column index out of bounds when getting pivot row.\n");
         return SIZE_MAX;
     }
 
@@ -535,16 +535,16 @@ size_t sp_tableau_get_pivot_row(const SPTableau *spt, size_t pivot_col_index, do
 // Canonize the pivot row in the tableau to ensure a pivot value of 1 in the pivot cell, and updates the pivot row accordingly.
 void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_t pivot_col_index) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return;
     }
     if (pivot_row_index >= spt->num_rows || pivot_col_index >= spt->num_cols) {
-        printf("Error: Pivot row or column index out of bounds when normalizing pivot row.\n");
+        //printf("Error: Pivot row or column index out of bounds when normalizing pivot row.\n");
         return;
     }
     double pivot_value = spt->tableau[pivot_row_index][pivot_col_index];
     if (pivot_value == 0.0) {
-        printf("Error: Pivot value is zero, cannot normalize pivot row.\n");
+        //printf("Error: Pivot value is zero, cannot normalize pivot row.\n");
         return;
     }
     if (pivot_value == 1.0) {
@@ -565,15 +565,15 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
 // Must be called after sp_tableau_canonize_pivot_row. 
 void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, size_t pivot_col_index) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return;
     }
     if (pivot_row_index < 1 || pivot_row_index >= spt->num_rows) {
-        printf("Error: Pivot row index out of bounds when normalizing non-pivot rows.\n");
+        //printf("Error: Pivot row index out of bounds when normalizing non-pivot rows.\n");
         return;
     }
     if (pivot_col_index < 1 || pivot_col_index >= spt->num_cols - 1) {
-        printf("Error: Pivot column index out of bounds when normalizing non-pivot rows.\n");
+        //printf("Error: Pivot column index out of bounds when normalizing non-pivot rows.\n");
         return;
     }
 
@@ -601,13 +601,13 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
 // Perform a single step of the simplex algorithm on the tableau.
 enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
+        //printf("Error: Tableau or its data is NULL.\n");
         return SPT_INVALID_STATE;
     }
 
     // Do not allow the simplex algorithm to continue if the degeneration level exceeds a threshold.
     if (spt->degeneration_level >= SPT_DEGENERATION_THRESHOLD) {
-        printf("Error: Severe degeneration detected. Problem is stuck in a degenerate state and cannot be resolved.\n");
+        //printf("Error: Severe degeneration detected. Problem is stuck in a degenerate state and cannot be resolved.\n");
         return SPT_DEGENERATED_LOOP; // Degeneration level exceeded threshold, problem is stuck.
     }
 
@@ -618,16 +618,16 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     if (pivot_col_index == 0) {
         SPBaseSolution *spbs = sp_tableau_get_base_sol(spt);
         if (spbs == NULL) {
-            printf("Error: Failed to retrieve current base solution for validation.\n");
+            //printf("Error: Failed to retrieve current base solution for validation.\n");
             return SPT_INVALID_STATE; // Failed to retrieve BFS, cannot confirm optimal solution.
         }
         bool validBFS = sp_tableau_validate_base(spt, spbs);
         if (!validBFS) {
-            printf("Error: Current base solution is invalid. Cannot proceed with Simplex step.\n");
+            //printf("Error: Current base solution is invalid. Cannot proceed with Simplex step.\n");
             free(spbs);
             return SPT_INVALID_STATE; // Current BFS is invalid, cannot proceed.
         }
-        printf("Optimal solution reached. No valid pivot column found.\n");
+        //printf("Optimal solution reached. No valid pivot column found.\n");
         free(spbs);
         return SPT_OPTIMAL_SOLUTION_FOUND; // No valid pivot column found, optimal solution reached.
     }
@@ -637,14 +637,14 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     double *min_ratios = sp_tableau_calculate_min_ratios(spt, pivot_col_index);
 
     if (min_ratios == NULL) {
-        printf("Error: Failed to allocate memory to calculate minimum ratios for pivot column.\n");
+        //printf("Error: Failed to allocate memory to calculate minimum ratios for pivot column.\n");
         return SPT_INVALID_STATE; //
     }
 
     size_t pivot_row_index = sp_tableau_get_pivot_row(spt, pivot_col_index, min_ratios);
 
     if (pivot_row_index == 0) {
-        printf("Unbounded problem detected. No valid pivot row found.\n");
+        //printf("Unbounded problem detected. No valid pivot row found.\n");
         free(min_ratios);
         return SPT_UNBOUNDED_PROBLEM; 
     }
@@ -652,11 +652,11 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     // If entering variable has a ratio of zero, the problem is degenerate. Increment degeneration level and continue to next step.
     // Otherwise, reset degeneration level to zero if not degenerate (or degeneration was mitigated).
     if (min_ratios[pivot_row_index] == 0.0) {
-        printf("Warning: Degeneration detected.\n");
+        //printf("Warning: Degeneration detected.\n");
         spt->degeneration_level++;
     } else {
         if (spt->degeneration_level > 0) {
-            printf("Degeneration mitigated. Resetting degeneration level.\n");
+            //printf("Degeneration mitigated. Resetting degeneration level.\n");
         }
         spt->degeneration_level = 0;
     }
@@ -674,7 +674,7 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     // Return error state if cannot acquire the current base solution for validation.
     SPBaseSolution *spbs = sp_tableau_get_base_sol(spt);
     if (spbs == NULL) {
-        printf("Error: Failed to retrieve BFS for validation after pivot operation.\n");
+        //printf("Error: Failed to retrieve BFS for validation after pivot operation.\n");
         return SPT_INVALID_STATE; // Failed to retrieve BFS, cannot validate.
     }
     bool valid_bfs = sp_tableau_validate_base(spt, spbs);
@@ -685,29 +685,29 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     size_t future_pivot_col_index = sp_tableau_get_pivot_column(spt);
     if (future_pivot_col_index == 0) {
         if (valid_bfs) {
-            printf("Optimal solution reached. No new variable can enter the BFS.\n");
+            //printf("Optimal solution reached. No new variable can enter the BFS.\n");
             free(spbs);
             return SPT_OPTIMAL_SOLUTION_FOUND; 
         } else {
-            printf("Error: Current BFS is invalid. Cannot confirm optimal solution.\n");
+            //printf("Error: Current BFS is invalid. Cannot confirm optimal solution.\n");
             free(spbs);
             return SPT_INVALID_STATE;
         }
     } 
     if (spt->tableau[0][future_pivot_col_index] == 0.0 && valid_bfs) {
-        printf("Multiple solutions detected. Non-base variable has coefficient zero in the objective function row.\n");
+        //printf("Multiple solutions detected. Non-base variable has coefficient zero in the objective function row.\n");
         free(spbs);
         return SPT_MULTPILE_SOLUTIONS_DETECTED; 
     } 
 
     // If no optimal solution has been reached yet, check degeneration level to determine if the problem is stuck in a degenerate state.
     if (spt->degeneration_level >= SPT_DEGENERATION_THRESHOLD) {
-        printf("Error: Severe degeneration detected. Problem is stuck in a degenerate state and cannot be resolved.\n"); 
+        //printf("Error: Severe degeneration detected. Problem is stuck in a degenerate state and cannot be resolved.\n"); 
         free(spbs);
         return SPT_DEGENERATED_LOOP;
     }
     if (spt->degeneration_level > 0) {
-        printf("Warning: Current degeneration level: %zu\n", spt->degeneration_level);
+        //printf("Warning: Current degeneration level: %zu\n", spt->degeneration_level);
         free(spbs);
         return SPT_DEGENERATED_PROBLEM; 
     }
@@ -718,80 +718,80 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
 }
 
 // Print the current state of the tableau to the console for debugging and visualization purposes.
-void sp_tableau_print_tableau(const SPTableau *spt) {
-    if (spt == NULL || spt->tableau == NULL) {
-        printf("Error: Tableau or its data is NULL.\n");
-        return;
-    }
+// void sp_tableau_print_tableau(const SPTableau *spt) {
+//     if (spt == NULL || spt->tableau == NULL) {
+//         //printf("Error: Tableau or its data is NULL.\n");
+//         return;
+//     }
 
-    size_t slack_var_count = 1;
-    size_t surplus_var_count = 1;
-    size_t artificial_var_count = 1;
+//     size_t slack_var_count = 1;
+//     size_t surplus_var_count = 1;
+//     size_t artificial_var_count = 1;
 
-    // Printing column headers
-    printf("Z\t");
-    for (size_t var_index = 1; var_index < spt->num_cols - 1; var_index++) {
-        // Printing decision variable names (first four characters)
-        if (var_index <= spt->num_decision_vars) {
-            // Get the name of the decision variable and truncate it to the first four characters
-            char *short_var_name = strndup(spt->lp_def->decision_variables->names[var_index - 1], 4); // Get first four characters of the variable name
-            printf("%s\t", short_var_name);
-            free(short_var_name);
-        }
-        // Printing slack variable names (s1, s2, s3, ...)
-        else if (var_index <= spt->num_decision_vars + spt->num_slack_vars) {
-            printf("s%zu\t", slack_var_count++);
-        }
-        // Print surplus variable names (e.g., e1, e2, e3, ...) for v2 if needed
-        else if (var_index <= spt->num_decision_vars + spt->num_slack_vars + spt->num_surplus_vars) {
-            printf("e%zu\t", surplus_var_count++);
-        }
-        // Print artificial variable names (e.g., a1, a2, a3, ...) for v2 if needed
-        else {
-            printf("a%zu\t", artificial_var_count++);
-        }
-    }
-    printf("RHS\n");
+//     // Printing column headers
+//     //printf("Z\t");
+//     for (size_t var_index = 1; var_index < spt->num_cols - 1; var_index++) {
+//         // Printing decision variable names (first four characters)
+//         if (var_index <= spt->num_decision_vars) {
+//             // Get the name of the decision variable and truncate it to the first four characters
+//             char *short_var_name = strndup(spt->lp_def->decision_variables->names[var_index - 1], 4); // Get first four characters of the variable name
+//             //printf("%s\t", short_var_name);
+//             free(short_var_name);
+//         }
+//         // Printing slack variable names (s1, s2, s3, ...)
+//         else if (var_index <= spt->num_decision_vars + spt->num_slack_vars) {
+//             //printf("s%zu\t", slack_var_count++);
+//         }
+//         // Print surplus variable names (e.g., e1, e2, e3, ...) for v2 if needed
+//         else if (var_index <= spt->num_decision_vars + spt->num_slack_vars + spt->num_surplus_vars) {
+//             //printf("e%zu\t", surplus_var_count++);
+//         }
+//         // Print artificial variable names (e.g., a1, a2, a3, ...) for v2 if needed
+//         else {
+//             //printf("a%zu\t", artificial_var_count++);
+//         }
+//     }
+//     //printf("RHS\n");
 
-    // Printing values
-    for (size_t row = 0; row < spt->num_rows; row++) {
-        for (size_t col = 0; col < spt->num_cols; col++) {
-            // Format value output as integer if it is a whole number, otherwise print with 4 decimal places
-            if (spt->tableau[row][col] == (int)spt->tableau[row][col]) {
-                printf("%d", (int)spt->tableau[row][col]);
-            } else {
-                printf("%0.4f", spt->tableau[row][col]);
-            }
-            // Add tab spacing between columns, except for the last column
-            if (col < spt->num_cols - 1) {
-                printf("\t");
-            }
-        }
-        printf("\n");
-    }
-}
+//     // Printing values
+//     for (size_t row = 0; row < spt->num_rows; row++) {
+//         for (size_t col = 0; col < spt->num_cols; col++) {
+//             // Format value output as integer if it is a whole number, otherwise print with 4 decimal places
+//             if (spt->tableau[row][col] == (int)spt->tableau[row][col]) {
+//                 //printf("%d", (int)spt->tableau[row][col]);
+//             } else {
+//                 //printf("%0.4f", spt->tableau[row][col]);
+//             }
+//             // Add tab spacing between columns, except for the last column
+//             if (col < spt->num_cols - 1) {
+//                 //printf("\t");
+//             }
+//         }
+//         //printf("\n");
+//     }
+// }
 
 // Print the current state of the BS (Base Solution) for the provided SPTableau.
 // Name of decision variables are included in the output if included in the SPT's LP definition.
-void sp_tableau_print_base(const SPTableau *spt) {
-    if (spt == NULL) {
-        printf("Error: Tableau or base solution is NULL.\n");
-        return;
-    }
-    if (!spt->lp_def || !spt->lp_def->decision_variables) {
-        printf("Error: LP definition or decision variables are NULL.\n");
-        return;
-    }
+// void sp_tableau_print_base(const SPTableau *spt) {
+//     if (spt == NULL) {
+//         //printf("Error: Tableau or base solution is NULL.\n");
+//         return;
+//     }
+//     if (!spt->lp_def || !spt->lp_def->decision_variables) {
+//         //printf("Error: LP definition or decision variables are NULL.\n");
+//         return;
+//     }
 
-    SPBaseSolution *spbs = sp_tableau_get_base_sol(spt);
-    if (!spbs) {
-        printf("Error: Failed to retrieve current base solution for printing.\n");
-        return;
-    }
-    sp_base_solution_print(spbs, spt->lp_def->decision_variables);
+//     SPBaseSolution *spbs = sp_tableau_get_base_sol(spt);
+//     if (!spbs) {
+//         //printf("Error: Failed to retrieve current base solution for printing.\n");
+//         return;
+//     }
+//     sp_base_solution_print(spbs, spt->lp_def->decision_variables);
     
-    bool is_bfs = sp_tableau_validate_base(spt, spbs);
-    printf("--- Is BFS?: %s ---\n", (is_bfs ? "Yes" : "No"));
+//     bool is_bfs = sp_tableau_validate_base(spt, spbs);
+//     //printf("--- Is BFS?: %s ---\n", (is_bfs ? "Yes" : "No"));
 
-    free(spbs);
-}
+//     free(spbs);
+// }

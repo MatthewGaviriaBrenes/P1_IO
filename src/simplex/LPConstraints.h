@@ -65,10 +65,10 @@ double lp_constraints_get_constraint_rhs(const LPConstraints *constraintList, si
 // Print the details of a specific constraint at the given index for debugging purposes.
 // Caller is responsible for passing a valid LPDecisionVars struct if they want to display variable names. 
 // If LPDecisionVars struct is NULL, will print generic variable names.
-void lp_constraints_print_constraint_definiton(const LPConstraints *constraintList, size_t index, const LPDecisionVars *decision_vars);
+// void lp_constraints_print_constraint_definiton(const LPConstraints *constraintList, size_t index, const LPDecisionVars *decision_vars);
 
 // Print all constraints in the LPConstraints struct for debugging purposes.
 // DecisionVariable struct can be passed to display the coefficients alongside their corresponding variable names. If NULL, will print generic variable names.
-void constrainst_print_all_constraints(const LPConstraints *constraintList, const LPDecisionVars *decision_vars);
+// void constrainst_print_all_constraints(const LPConstraints *constraintList, const LPDecisionVars *decision_vars);
 
 #endif
