@@ -168,7 +168,7 @@ void presentation_tableau(FILE *file,
         }
     }
 
-    fprintf(file, " & RHS \\\\\n");
+    fprintf(file, " & - \\\\\n");
     fprintf(file, "\\midrule\n");
 
     for (size_t row = 0; row < tableau->num_rows; ++row) {
