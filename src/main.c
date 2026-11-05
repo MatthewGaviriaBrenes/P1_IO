@@ -252,16 +252,22 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     char *safe_members = latex_escape(gtk_entry_get_text(GTK_ENTRY(app.members_entry)));
     char *safe_course = latex_escape(gtk_entry_get_text(GTK_ENTRY(app.course_entry)));
     char *safe_semester = latex_escape(gtk_entry_get_text(GTK_ENTRY(app.semester_entry)));
-    fprintf(f, "\\documentclass[11pt]{article}\n"
+    /*fprintf(f, "\\documentclass[11pt]{article}\n"
                "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n"
                "\\usepackage[spanish]{babel}\n\\usepackage{geometry}\n"
                "\\usepackage{amsmath}\n\\geometry{margin=2cm}\n"
                "\\usepackage{booktabs}\n"
                "\\title{Informe del método Simplex}\\author{%s}\\date{%s}\n"
-               "\\begin{document}\\maketitle\n",safe_members, safe_semester);
+               "\\begin{document}\\maketitle\n",safe_members, safe_semester);*/
     
+    //Los nombres del grupo responsable del programa.
+    presentation_preamble(f);
+    presentation_cover(f);
+    
+    //Explicacion de simplex
     presentation_simplex_slide(f);
     
+    //Los nombres de los usuarios del programa
     fprintf(f, "\\section*{Problema}\n"
                "\\textbf{Nombre:} %s\\\\\n\\textbf{Curso:} %s\\\\\n"
                "\\textbf{Integrantes:} %s\\\\\n\\textbf{Semestre:} %s\n"

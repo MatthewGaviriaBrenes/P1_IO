@@ -61,7 +61,6 @@ void presentation_cover(FILE *file)
 {
     fprintf(file, "\\maketitle\n");
     fprintf(file, "\\thispagestyle{empty}\n");
-    fprintf(file, "\\clearpage\n\n");
 }
 
 void presentation_simplex_slide(FILE *file)
