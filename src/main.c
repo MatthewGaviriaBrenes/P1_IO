@@ -134,6 +134,7 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
             app.constraint_coeff_entries[i][j] = make_entry(hint, j == 0 ? "1" : "0");
             gtk_box_pack_start(GTK_BOX(row), app.constraint_coeff_entries[i][j], FALSE, FALSE, 0);
         }
+<<<<<<< Updated upstream
         gtk_box_pack_start(GTK_BOX(row), make_label("≤"), FALSE, FALSE, 0);
         app.constraint_rhs_entries[i] = make_entry("Right side ≥ 0", rhs_default);
         gtk_entry_set_width_chars(GTK_ENTRY(app.constraint_rhs_entries[i]), 10);
@@ -200,6 +201,89 @@ static void free_snapshot(TableauSnapshot *snap) {
     snap->cells = NULL;
 }
 
+=======
+        GtkWidget *operator_combo = gtk_combo_box_text_new();
+
+        gtk_combo_box_text_append_text(
+            GTK_COMBO_BOX_TEXT(operator_combo), "≤");
+        
+        gtk_combo_box_text_append_text(
+            GTK_COMBO_BOX_TEXT(operator_combo), "≥");
+        
+        gtk_combo_box_text_append_text(
+            GTK_COMBO_BOX_TEXT(operator_combo), "=");
+        
+        gtk_combo_box_set_active(
+            GTK_COMBO_BOX(operator_combo), 0);
+
+        gtk_box_pack_start(
+        GTK_BOX(row), operator_combo, FALSE, FALSE, 0);
+        app.constraint_rhs_entries[i] = make_entry("Right side ≥ 0", rhs_default);
+        gtk_entry_set_width_chars(GTK_ENTRY(app.constraint_rhs_entries[i]), 10);
+        gtk_box_pack_start(GTK_BOX(row), app.constraint_rhs_entries[i], FALSE, FALSE, 0);
+    }
+
+    gtk_widget_show_all(app.objective_fields_box);
+    gtk_widget_show_all(app.constraints_fields_box);
+    set_status("Solve and generate PDF.");
+}
+
+static void on_clear_clicked(GtkButton *button, gpointer user_data) {
+    (void)button; (void)user_data;
+    gtk_entry_set_text(GTK_ENTRY(app.problem_name_entry), "");
+    gtk_entry_set_text(GTK_ENTRY(app.members_entry), "");
+    gtk_entry_set_text(GTK_ENTRY(app.course_entry), "");
+    gtk_entry_set_text(GTK_ENTRY(app.semester_entry), "");
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(app.variables_spin), 2);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(app.restricciones_spin), 2);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(app.objective_combo), 0);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(app.show_intermediate_check), FALSE);
+    on_generate_fields_clicked(NULL, NULL);
+    set_status("Form cleaned.");
+}
+
+static gboolean parse_entry_number(GtkWidget *entry, double *value) {
+    const char *text = gtk_entry_get_text(GTK_ENTRY(entry));
+    char *end = NULL;
+    if (!text || !*text) return FALSE;
+    double parsed = g_ascii_strtod(text, &end);
+    while (end && g_ascii_isspace(*end)) ++end;
+    if (!end || end == text || *end != '\0' || !isfinite(parsed)) return FALSE;
+    *value = parsed;
+    return TRUE;
+}
+
+static char *latex_escape(const char *input) {
+    GString *out = g_string_new("");
+    if (!input) return g_string_free(out, FALSE);
+    for (const char *p = input; *p; ++p) {
+        switch (*p) {
+            case '\\': g_string_append(out, "\\textbackslash{}"); break;
+            case '&': g_string_append(out, "\\&"); break;
+            case '%': g_string_append(out, "\\%"); break;
+            case '$': g_string_append(out, "\\$"); break;
+            case '#': g_string_append(out, "\\#"); break;
+            case '_': g_string_append(out, "\\_"); break;
+            case '{': g_string_append(out, "\\{"); break;
+            case '}': g_string_append(out, "\\}"); break;
+            case '~': g_string_append(out, "\\textasciitilde{}"); break;
+            case '^': g_string_append(out, "\\textasciicircum{}"); break;
+            default: g_string_append_c(out, *p); break;
+        }
+    }
+    return g_string_free(out, FALSE);
+}
+
+typedef struct { double **cells; size_t rows; size_t cols; } TableauSnapshot;
+
+static void free_snapshot(TableauSnapshot *snap) {
+    if (!snap || !snap->cells) return;
+    for (size_t r = 0; r < snap->rows; ++r) free(snap->cells[r]);
+    free(snap->cells);
+    snap->cells = NULL;
+}
+
+>>>>>>> Stashed changes
 static gboolean save_snapshot(TableauSnapshot *snap, const SPTableau *spt) {
     if (!snap || !spt || !spt->tableau) return FALSE;
     snap->rows = spt->num_rows;

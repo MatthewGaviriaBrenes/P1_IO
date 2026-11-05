@@ -367,6 +367,7 @@
               </packing>
             </child>
             <child>
+<<<<<<< Updated upstream
               <object class="GtkBox" id="output_page">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
@@ -543,6 +544,12 @@
                 <property name="position">1</property>
                 <property name="tab-fill">False</property>
               </packing>
+=======
+              <placeholder/>
+            </child>
+            <child type="tab">
+              <placeholder/>
+>>>>>>> Stashed changes
             </child>
           </object>
           <packing>
@@ -552,6 +559,7 @@
           </packing>
         </child>
         <child>
+<<<<<<< Updated upstream
           <object class="GtkSeparator" id="bottom_separator">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
@@ -561,6 +569,9 @@
             <property name="fill">True</property>
             <property name="position">3</property>
           </packing>
+=======
+          <placeholder/>
+>>>>>>> Stashed changes
         </child>
         <child>
           <object class="GtkBox" id="bottom_buttons_box">
@@ -579,7 +590,25 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
+<<<<<<< Updated upstream
                 <property name="position">0</property>
+=======
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="show_intermediate_check">
+                <property name="label">Include middle tables in PDF</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="draw-indicator">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+>>>>>>> Stashed changes
               </packing>
             </child>
             <child>
@@ -596,7 +625,11 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
+<<<<<<< Updated upstream
                 <property name="position">1</property>
+=======
+                <property name="position">2</property>
+>>>>>>> Stashed changes
               </packing>
             </child>
           </object>
