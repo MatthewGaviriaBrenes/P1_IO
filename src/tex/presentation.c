@@ -46,7 +46,8 @@ void presentation_preamble(FILE *file)
     fprintf(file, "\\usepackage{booktabs}\n");
     fprintf(file, "\\usepackage{array}\n");
     fprintf(file, "\\usepackage{graphicx}\n");
-    fprintf(file, "\\usepackage{xcolor}\n");fprintf(file, "\\usepackage[expansion=false]{microtype}\n\n");
+    fprintf(file, "\\usepackage[table]{xcolor}\n");
+    fprintf(file, "\\usepackage[expansion=false]{microtype}\n\n");
 
     fprintf(file, "\\title{Project 01 - Simplex}\n");
     fprintf(file, "\\author{Matthew Gaviria Brenes - 2023179864 \\\\\n Esteban Fonseca Montoya - 201028937 \\\\\n Josué Meza Solano - 2024240640}\n");
@@ -180,6 +181,99 @@ void presentation_tableau(FILE *file,
 
         for (size_t col = 0; col < tableau->num_cols; ++col) {
             fprintf(file, " & %.4g", tableau->tableau[row][col]);
+        }
+
+        fprintf(file, " \\\\\n");
+    }
+
+    fprintf(file, "\\bottomrule\n");
+    fprintf(file, "\\end{tabular}\n");
+    fprintf(file, "\\end{center}\n\n");
+}
+
+void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
+    const char *title, size_t pivot_column, size_t pivot_row, const double *min_ratios){
+    if (file == NULL || tableau == NULL || tableau->tableau == NULL ||
+        tableau->num_rows == 0 || tableau->num_cols < 2) {
+        return;
+    }
+
+    const size_t rhs_column = tableau->num_cols - 1;
+    const int valid_pivot_column = pivot_column > 0 && pivot_column < rhs_column;
+    const int valid_pivot_row = pivot_row > 0 && pivot_row < tableau->num_rows;
+    const int valid_pivot = valid_pivot_column && valid_pivot_row;
+
+    fprintf(file, "\\section{");
+    presentation_tex_text(file, title != NULL ? title : "Simplex Pivot Step");
+    fprintf(file, "}\n");
+    fprintf(file, "\\begin{center}\n");
+    fprintf(file, "\\small\n");
+    fprintf(file, "\\setlength{\\tabcolsep}{6pt}\n");
+
+    // label tableau rows and columns, adds column for ratios
+    // highlights the pivot column and pivot row if valid.
+    fprintf(file, "\\begin{tabular}{c");
+    for (size_t col = 0; col < tableau->num_cols + 1; ++col) {
+        fprintf(file, "c");
+    }
+    fprintf(file, "}\n");
+
+    fprintf(file, "\\toprule\n");
+    fprintf(file, "Row & $Z$");
+
+    for (size_t col = 1; col < rhs_column; ++col) {
+        fprintf(file, " & ");
+
+        if (valid_pivot_column && col == pivot_column) {
+            fprintf(file, "\\cellcolor{blue!15}");
+        }
+
+        if (col <= tableau->num_decision_vars) {
+            fprintf(file, "$x_{%zu}$", col);
+
+        } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars) {
+            fprintf(file, "$S_{%zu}$", col - tableau->num_decision_vars);
+        
+        } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars + tableau->num_surplus_vars) {
+            fprintf(file, "$E_{%zu}$", col - tableau->num_decision_vars - tableau->num_slack_vars);
+        
+        } else {
+            fprintf(file, "$A_{%zu}$", col - tableau->num_decision_vars - tableau->num_slack_vars - tableau->num_surplus_vars);
+        
+        }
+    }
+
+    fprintf(file, " & RHS & Ratio \\\\\n");
+    fprintf(file, "\\midrule\n");
+
+    for (size_t row = 0; row < tableau->num_rows; ++row) {
+        if (row == 0) {
+            fprintf(file, "$Z$");
+        } else {
+            fprintf(file, "$R_{%zu}$", row);
+        }
+
+        for (size_t col = 0; col < tableau->num_cols; ++col) {
+            fprintf(file, " & ");
+
+            if (valid_pivot && row == pivot_row && col == pivot_column) {
+                fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g}", tableau->tableau[row][col]);
+            
+            } else {
+                if (valid_pivot_column && col == pivot_column) {
+                    fprintf(file, "\\cellcolor{blue!15}");
+                }
+                fprintf(file, "%.4g", tableau->tableau[row][col]);
+            
+            }
+        }
+
+        if (row == 0 || min_ratios == NULL || min_ratios[row] < 0.0 ||
+            !valid_pivot_column || tableau->tableau[row][pivot_column] <= 0.0) {
+            fprintf(file, " & --");
+        } else {
+            fprintf(file, " & $\\frac{%.4g}{%.4g}=%.4g$", tableau->tableau[row][rhs_column],
+                tableau->tableau[row][pivot_column], min_ratios[row]);
         }
 
         fprintf(file, " \\\\\n");
@@ -485,7 +579,7 @@ int presentation_compile(const char *tex_filename)
 
     char command[2048];
     int written = snprintf(command, sizeof(command),
-        "pdflatex -interaction=nonstopmode -halt-on-error \"%s\"", tex_filename);
+        "pdflatex -interaction=nonstopmode -halt-on-error \"%s\"  > /dev/null 2>&1", tex_filename);
 
     if (written < 0 || (size_t)written >= sizeof(command)) {
         fprintf(stderr, "Error: Compile command is too long.\n");

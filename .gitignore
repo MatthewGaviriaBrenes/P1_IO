@@ -2,5 +2,7 @@ out/
 *.exe
 *.tex
 *.code-workspace
+informe_simplex.fdb_latexmk
 informe_simplex.pdf
 informe_simplex.tex
+
