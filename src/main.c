@@ -282,40 +282,43 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     // Explain the Simplex Algorithm
     presentation_simplex_slide(f);
     
-    //Los nombres de los usuarios del programa
-    fprintf(f, "\\section*{Problem Name:}\n%s\n", safe_name);
-    fprintf(f, "\\section*{Mathematical Model}\n");
-    fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
-    for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-        double a = lp->objective_function->coeffs->coefficients[j];
-        if (a == 0.0) {
-            continue;
-        }
-        if (a < 0.0) {
-            fprintf(f, j == 0 ? "-" : " - ");
-        } else if (j > 0) {
-            fprintf(f, " + ");
-        }
-        fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
-    }
-    fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.\t}\n");
-    for (size_t i = 0; i < lp->constraints->count; ++i) {
-        for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-            double a = lp->constraints->coeff_sets[i]->coefficients[j];
-            if (a == 0.0) {
-                continue;
-            }
-            if (a < 0.0) {
-                fprintf(f, j == 0 ? "-" : " - ");
-            } else if (j > 0) {
-                fprintf(f, " + ");
-            }
-            fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
-        }
-        fprintf(f, " &\\le %.4g \\\\\n", lp->constraints->rhs_values[i]);
-    }
-    fprintf(f, "x_j &\\ge 0\\quad\\text{for every variable }j\n\\end{align*}\n");
+    // Problem Definition (name and mathematical model)
+    presentation_original_problem(f, safe_name, lp);
 
+    // fprintf(f, "\\section*{Problem Name:}\n%s\n", safe_name);
+    // fprintf(f, "\\section*{Mathematical Model}\n");
+    // fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
+    // for (size_t j = 0; j < lp->num_decision_vars; ++j) {
+    //     double a = lp->objective_function->coeffs->coefficients[j];
+    //     if (a == 0.0) {
+    //         continue;
+    //     }
+    //     if (a < 0.0) {
+    //         fprintf(f, j == 0 ? "-" : " - ");
+    //     } else if (j > 0) {
+    //         fprintf(f, " + ");
+    //     }
+    //     fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
+    // }
+    // fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.\t}\n");
+    // for (size_t i = 0; i < lp->constraints->count; ++i) {
+    //     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
+    //         double a = lp->constraints->coeff_sets[i]->coefficients[j];
+    //         if (a == 0.0) {
+    //             continue;
+    //         }
+    //         if (a < 0.0) {
+    //             fprintf(f, j == 0 ? "-" : " - ");
+    //         } else if (j > 0) {
+    //             fprintf(f, " + ");
+    //         }
+    //         fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
+    //     }
+    //     fprintf(f, " &\\le %.4g \\\\\n", lp->constraints->rhs_values[i]);
+    // }
+    // fprintf(f, "x_j &\\ge 0\\quad\\text{for every variable }j\n\\end{align*}\n");
+
+    // Print initial tableau
     write_tableau(f, spt, initial_snapshot, "Initial table");
 
     if (include_intermediate && history_count > 0) {
