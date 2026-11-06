@@ -255,7 +255,11 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      gboolean include_intermediate, size_t steps,
                                      enum SPTableauStatus final_status,
                                      const TableauSnapshot *initial_snapshot,
-                                     const TableauStepSnapshot *history, size_t history_count) {
+                                     const TableauStepSnapshot *history,
+                                     size_t history_count,
+                                     size_t degeneration_level,
+                                     const TableauSnapshot *first_multiple_tableau,
+                                     const SPMultiSolutions *multiple_solutions) {
     const char *tex_path = "informe_simplex.tex";
     FILE *f = g_fopen(tex_path, "w");
     if (!f) return FALSE;
@@ -335,15 +339,39 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
             }
         }
     }
-    fprintf(f, "\\section{Result}\n%s\\par\nSteps performed: %zu\\par\n", status, steps);
+        fprintf(f, "\\section{Degeneracy Analysis}\n"
+               "The current consecutive zero-ratio pivot count is %zu "
+               "(threshold: %zu). This counter increases after a zero "
+               "minimum ratio and resets after a positive minimum ratio; "
+               "therefore, it reports the current consecutive streak, not "
+               "the cumulative number of degenerate pivots.\\par\n",
+            degeneration_level, SPT_DEGENERATION_THRESHOLD);
+        if (final_status == SPT_DEGENERATED_LOOP) {
+        fprintf(f, "The solver stopped after reaching the degeneration "
+               "threshold; an optimal solution was not confirmed.\\par\n");
+        }
+
+        fprintf(f, "\\section{Result}\n%s\\par\nSteps performed: %zu\\par\n",
+            status, steps);
 
     TableauSnapshot final_snapshot = {0};
     if (save_snapshot(&final_snapshot, spt)) {
-        write_tableau(f, spt, &final_snapshot, "Final Table");
+        if (final_status == SPT_MULTPILE_SOLUTIONS_DETECTED &&
+            multiple_solutions != NULL &&
+            first_multiple_tableau != NULL &&
+            first_multiple_tableau->cells != NULL) {
+            write_tableau(f, spt, first_multiple_tableau,
+                          "First optimal final tableau");
+            write_tableau(f, spt, &final_snapshot,
+                          "Second optimal final tableau");
+        } else {
+            write_tableau(f, spt, &final_snapshot, "Final Table");
+        }
         free_snapshot(&final_snapshot);
     }
 
-    presentation_solution(f, spt, final_status, NULL);
+    fprintf(f, "\\providecommand{\\Additional}{\\item}\n");
+    presentation_solution(f, spt, final_status, multiple_solutions);
 
     fprintf(f, "\\end{document}\n");
     fclose(f);
@@ -523,12 +551,41 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     if (steps >= MAX_SIMPLEX_STEPS && result != SPT_OPTIMAL_SOLUTION_FOUND && result != SPT_MULTPILE_SOLUTIONS_DETECTED && result != SPT_UNBOUNDED_PROBLEM && result != SPT_INFEASIBLE_PROBLEM && result != SPT_INVALID_STATE)
         result = SPT_DEGENERATED_LOOP;
 
+    TableauSnapshot first_multiple_tableau = {0};
+    SPBaseSolution *bfs_a = NULL;
+    SPBaseSolution *bfs_b = NULL;
+    SPMultiSolutions *multiple_solutions = NULL;
+
+    if (result == SPT_MULTPILE_SOLUTIONS_DETECTED &&
+        save_snapshot(&first_multiple_tableau, spt)) {
+        bfs_a = sp_tableau_get_base_sol(spt);
+
+        if (bfs_a != NULL) {
+            enum SPTableauStatus second_status = sp_tableau_solve_step(spt);
+            if (second_status != SPT_UNBOUNDED_PROBLEM &&
+                second_status != SPT_INVALID_STATE &&
+                second_status != SPT_DEGENERATED_LOOP) {
+                bfs_b = sp_tableau_get_base_sol(spt);
+            }
+
+            if (bfs_b != NULL &&
+                sp_tableau_validate_base(spt, bfs_a) &&
+                sp_tableau_validate_base(spt, bfs_b)) {
+                multiple_solutions =
+                    sp_multi_solutions_create(bfs_a, bfs_b);
+            }
+        }
+    }
+
     const char *result_message = status_text(result);
     const char *problem_name = gtk_entry_get_text(GTK_ENTRY(app.problem_name_entry));
     if (!problem_name || !*problem_name) problem_name = "Linear Programming Problem";
     gboolean pdf_ok = write_report_and_pdf(lp, spt, problem_name, result_message,
                                            include_intermediate, steps, result,
-                                           &initial_snapshot, history, history_count);
+                                           &initial_snapshot, history, history_count,
+                                           spt->degeneration_level,
+                                           &first_multiple_tableau,
+                                           multiple_solutions);
     gchar *summary = g_strdup_printf("%s Steps: %zu. %s",
                                      result_message, steps,
                                      pdf_ok ? "\nPDF generated: informe_simplex.pdf" : "\nCouldn't generate PDF.");
@@ -540,8 +597,13 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     for (size_t k = 0; k < history_count; ++k) {
         free_snapshot(&history[k].tableau); 
         free(history[k].min_ratios);
+        free_snapshot(&history[k].tableau_after);
     }
     free(history);
+    free_snapshot(&first_multiple_tableau);
+    sp_multi_solutions_free(multiple_solutions);
+    sp_base_solution_free(bfs_a);
+    sp_base_solution_free(bfs_b);
     sp_tableau_free(spt);
     free_model(lp);
 }

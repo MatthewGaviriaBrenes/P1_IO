@@ -282,7 +282,32 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
     fprintf(file, "\\bottomrule\n");
     fprintf(file, "\\end{tabular}\n");
     fprintf(file, "\\end{center}\n\n");
+
+    if (valid_pivot && min_ratios != NULL) {
+        double selected_ratio = min_ratios[pivot_row];
+        size_t tied_rows = 0;
+        for (size_t row = 1; row < tableau->num_rows; ++row) {
+            if (min_ratios[row] >= 0.0 &&
+                min_ratios[row] == selected_ratio) {
+                    ++tied_rows;
+                }
+            }
+            if (selected_ratio == 0.0) {
+                fprintf(file,
+                    "\\par\\textbf{Degeneracy:} the minimum ratio is zero "
+                    "in row $R_{%zu}$. The pivot changes the basis, but "
+                    "does not improve the objective value in this iteration.\\par\n", pivot_row);
+            }
+            if (tied_rows > 1) {
+                fprintf(file,
+                    "\\par\\textbf{Tie:} %zu rows share the minimum ratio. "
+                    "The row with the smallest positive coefficient in the pivot column is selected; "
+                    "if the tie persists, the first row found is kept.\\par\n", tied_rows);
+            }
+        
+    }
 }
+    
 
 static void presentation_print_variable(FILE *file,
     const LPDefinition *problem, size_t index)
