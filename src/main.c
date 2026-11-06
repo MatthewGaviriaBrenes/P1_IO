@@ -435,10 +435,9 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
                 show_error("Every coefficient from constraints must have a valid number."); return;
             }
         }
-        //TODO: Double-check if the constraints' RHS have to be non-negative. If not, remove the check below.
-        if (!parse_entry_number(app.constraint_rhs_entries[i], &rhs) || rhs < 0) {
+        if (!parse_entry_number(app.constraint_rhs_entries[i], &rhs)) {
             lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-            show_error("Each right-hand side must be a real number greater than or equal to zero."); return;
+            show_error("Every right-hand side must have a valid number."); return;
         }
         LPCoefficients *row = lp_coefficients_create_from_array(app.nvars, row_values);
         if (!row) {
