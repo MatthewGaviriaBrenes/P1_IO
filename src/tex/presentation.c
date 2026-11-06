@@ -151,7 +151,23 @@ void presentation_tableau(FILE *file,
         fprintf(file, " & ");
 
         if (col <= tableau->num_decision_vars) {
-            fprintf(file, "$x_{%zu}$", col);
+            if (tableau->lp_def->decision_variables != NULL &&
+                tableau->lp_def->decision_variables->names != NULL &&
+                tableau->lp_def->decision_variables->names [col -1] != NULL) {
+                    fputs("\\text{\\texttt{", file);
+
+                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 4) {
+                        char truncated_name[5] = {0};
+                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 4);
+                        presentation_tex_text(file, truncated_name);
+                    } else {
+                        presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
+                    }
+                    fputs("}}", file);
+                } else {
+                    fprintf(file, "$x_{%zu}$", col);
+                }
+                 
         } else if (col <= tableau->num_decision_vars +
                           tableau->num_slack_vars) {
             fprintf(file, "$S_{%zu}$", col - tableau->num_decision_vars);
@@ -169,7 +185,7 @@ void presentation_tableau(FILE *file,
         }
     }
 
-    fprintf(file, " & - \\\\\n");
+    fprintf(file, " & RHS \\\\\n");
     fprintf(file, "\\midrule\n");
 
     for (size_t row = 0; row < tableau->num_rows; ++row) {
@@ -229,7 +245,22 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
         }
 
         if (col <= tableau->num_decision_vars) {
-            fprintf(file, "$x_{%zu}$", col);
+            if (tableau->lp_def->decision_variables != NULL &&
+                tableau->lp_def->decision_variables->names != NULL &&
+                tableau->lp_def->decision_variables->names [col -1] != NULL) {
+                    fputs("\\text{\\texttt{", file);
+
+                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 4) {
+                        char truncated_name[5] = {0};
+                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 4);
+                        presentation_tex_text(file, truncated_name);
+                    } else {
+                        presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
+                    }
+                    fputs("}}", file);
+                } else {
+                    fprintf(file, "$x_{%zu}$", col);
+                }
 
         } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars) {
             fprintf(file, "$S_{%zu}$", col - tableau->num_decision_vars);
@@ -282,7 +313,32 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
     fprintf(file, "\\bottomrule\n");
     fprintf(file, "\\end{tabular}\n");
     fprintf(file, "\\end{center}\n\n");
+
+    if (valid_pivot && min_ratios != NULL) {
+        double selected_ratio = min_ratios[pivot_row];
+        size_t tied_rows = 0;
+        for (size_t row = 1; row < tableau->num_rows; ++row) {
+            if (min_ratios[row] >= 0.0 &&
+                min_ratios[row] == selected_ratio) {
+                    ++tied_rows;
+                }
+            }
+            if (selected_ratio == 0.0) {
+                fprintf(file,
+                    "\\par\\textbf{Degeneracy:} the minimum ratio is zero "
+                    "in row $R_{%zu}$. The pivot changes the basis, but "
+                    "does not improve the objective value in this iteration.\\par\n", pivot_row);
+            }
+            if (tied_rows > 1) {
+                fprintf(file,
+                    "\\par\\textbf{Tie:} %zu rows share the minimum ratio. "
+                    "The row with the smallest positive coefficient in the pivot column is selected; "
+                    "if the tie persists, the first row found is kept.\\par\n", tied_rows);
+            }
+        
+    }
 }
+    
 
 static void presentation_print_variable(FILE *file,
     const LPDefinition *problem, size_t index)
@@ -478,22 +534,22 @@ void presentation_solution(FILE *file, const SPTableau *tableau,
 
                 presentation_print_base_solution(
                     file, tableau, multiple_solutions->bfs_a,
-                    "First optimal solution");
+                    "First optimal solution (BFS A)");
                 presentation_print_base_solution(
                     file, tableau, multiple_solutions->bfs_b,
-                    "Second optimal solution");
-                fprintf(file, "\\Additional basic solutions found using the following equation:\n");
+                    "Second optimal solution (BFS B)");
+                fprintf(file, "\\item The following additional solutions between the found optimal solutions (BFS A, BFS B) were calculated using the following equation:\n");
                 fprintf(file, "\\[\\text{Middlepoint Solution} = \\alpha \\cdot \\text{BFS A} + (1 - \\alpha) \\cdot \\text{BFS B}\\]\n");
 
                 presentation_print_base_solution(
                     file, tableau, solution_m1,
-                    "Calculated solution (Alpha = 0.5)");
+                    "Calculated solution ($\\alpha = 0.5$)");
                 presentation_print_base_solution(
                     file, tableau, solution_m2,
-                    "Calculated solution (Alpha = 0.25)");
+                    "Calculated solution ($\\alpha = 0.25$)");
                 presentation_print_base_solution(
                     file, tableau, solution_m3,
-                    "Calculated solution (Alpha = 0.75)");
+                    "Calculated solution ($\\alpha = 0.75$)");
 
                 sp_base_solution_free(solution_m1);
                 sp_base_solution_free(solution_m2);
