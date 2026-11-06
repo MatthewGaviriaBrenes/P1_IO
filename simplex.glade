@@ -404,7 +404,7 @@
             </child>
             <child>
               <object class="GtkCheckButton" id="show_intermediate_check">
-                <property name="label">Include middle tables in PDF</property>
+                <property name="label">Include middle tableaus in report</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">False</property>
