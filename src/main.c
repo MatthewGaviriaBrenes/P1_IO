@@ -205,7 +205,7 @@ static char *latex_escape(const char *input) {
 
 typedef struct { double **cells; size_t rows; size_t cols; } TableauSnapshot;
 
-typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row; double *min_ratios;} TableauStepSnapshot;
+typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row; double *min_ratios; TableauSnapshot tableau_after;} TableauStepSnapshot;
 
 static void free_snapshot(TableauSnapshot *snap) {
     if (!snap || !snap->cells) return;
@@ -316,7 +316,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     write_tableau(f, spt, initial_snapshot, "Initial table");
 
     if (include_intermediate && history_count > 0) {
-        fprintf(f, "\\section*{Middle tables}\nTable states were saved during the iterations\\par\n");
+        fprintf(f, "\\section{Middle tables}\nTable states were saved during the iterations\\par\n");
         for (size_t k = 0; k < history_count; ++k) {
             char caption[64];
             g_snprintf(caption, sizeof(caption), "Step %zu", k + 1);
@@ -325,9 +325,17 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
             presentation_intermediate_tableau(f, &snapshot_tableau, 
                 caption, history[k].pivot_column,history[k].pivot_row, 
                 history[k].min_ratios);
+
+            if (history[k].tableau_after.cells != NULL) {
+                char after_caption[64];
+                g_snprintf(after_caption, sizeof(after_caption),
+                "Table after pivot %zu", k + 1);
+
+                write_tableau(f, spt, &history[k].tableau_after, after_caption);
+            }
         }
     }
-    fprintf(f, "\\section*{Result}\n%s\\par\nSteps performed: %zu\\par\n", status, steps);
+    fprintf(f, "\\section{Result}\n%s\\par\nSteps performed: %zu\\par\n", status, steps);
 
     TableauSnapshot final_snapshot = {0};
     if (save_snapshot(&final_snapshot, spt)) {
@@ -502,9 +510,11 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
 
         result = sp_tableau_solve_step(spt);
         ++steps;
-        /*if (include_intermediate && history && history_count < MAX_SIMPLEX_STEPS) {
-            if (save_snapshot(&history[history_count], spt)) ++history_count;
-        }*/
+
+        if (pivot_row > 0 && pivot_row < spt->num_rows && history_count > 0) {
+            save_snapshot(&history[history_count - 1].tableau_after, spt);
+        }
+
         if (result == SPT_OPTIMAL_SOLUTION_FOUND ||
             result == SPT_MULTPILE_SOLUTIONS_DETECTED ||
             result == SPT_UNBOUNDED_PROBLEM || result == SPT_DEGENERATED_LOOP ||
