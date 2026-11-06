@@ -262,7 +262,7 @@
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="shadow-type">in</property>
-                            <property name="min-content-height">90</property>
+                            <property name="min-content-height">135</property>
                             <child>
                               <object class="GtkViewport" id="objective_viewport">
                                 <property name="visible">True</property>
