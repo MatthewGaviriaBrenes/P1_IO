@@ -349,13 +349,14 @@ void presentation_original_problem(FILE *file,
         problem->objective_function->type == MAXIMIZE ? "\\max" : "\\min";
 
     fputs("\\section{Original Problem}\n", file);
-    fputs("\\small\n\\textbf{Problem Name:} ", file);
+    fputs("\\subsection{Problem Name:} ", file);
 
     presentation_tex_text(
         file,
-        problem_name != NULL ? problem_name : "Problem Name Pending"
+        problem_name != NULL ? problem_name : "Linear Programming Problem"
     );
 
+    fputs("\n\\subsection{Mathematical Model} ", file);
     fputs("\n\\[\n\\begin{array}{rcl}\n", file);
     fprintf(file, "%s\\quad Z & = & ", optimization);
 
@@ -365,7 +366,7 @@ void presentation_original_problem(FILE *file,
         problem->objective_function->coeffs->coefficients
     );
 
-    fputs(" \\\\\n\\multicolumn{3}{l}{\\text{subject to}} \\\\\n", file);
+    fputs(" \\\\\n\\multicolumn{3}{l}{\\text{s.t.}} \\\\\n", file);
 
     for (size_t row = 0; row < problem->constraints->count; ++row) {
         const LPCoefficients *constraint =
@@ -401,9 +402,11 @@ void presentation_original_problem(FILE *file,
 
     for (size_t i = 0; i < problem->num_decision_vars; ++i) {
         presentation_print_variable(file, problem, i);
-        fputs(" & \\geq & 0 \\\\\n", file);
+        if (i + 1 < problem->num_decision_vars) {
+            fputs(", ", file);
+        }
     }
-
+    fputs(" & \\geq & 0 \\\\\n", file);
     fputs("\\end{array}\n\\]\n\\clearpage\n\n", file);
 }
 

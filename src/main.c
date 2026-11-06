@@ -163,9 +163,6 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
 static void on_clear_clicked(GtkButton *button, gpointer user_data) {
     (void)button; (void)user_data;
     gtk_entry_set_text(GTK_ENTRY(app.problem_name_entry), "");
-    gtk_entry_set_text(GTK_ENTRY(app.members_entry), "");
-    gtk_entry_set_text(GTK_ENTRY(app.course_entry), "");
-    gtk_entry_set_text(GTK_ENTRY(app.semester_entry), "");
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(app.variables_spin), 2);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(app.restricciones_spin), 2);
     gtk_combo_box_set_active(GTK_COMBO_BOX(app.objective_combo), 0);
@@ -263,10 +260,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     FILE *f = g_fopen(tex_path, "w");
     if (!f) return FALSE;
 
-    char *safe_name = latex_escape(problem_name);
-    char *safe_members = latex_escape(gtk_entry_get_text(GTK_ENTRY(app.members_entry)));
-    char *safe_course = latex_escape(gtk_entry_get_text(GTK_ENTRY(app.course_entry)));
-    char *safe_semester = latex_escape(gtk_entry_get_text(GTK_ENTRY(app.semester_entry)));
+    char *safe_problem_name = latex_escape(problem_name);
     /*fprintf(f, "\\documentclass[11pt]{article}\n"
                "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n"
                "\\usepackage[spanish]{babel}\n\\usepackage{geometry}\n"
@@ -282,40 +276,43 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     // Explain the Simplex Algorithm
     presentation_simplex_slide(f);
     
-    //Los nombres de los usuarios del programa
-    fprintf(f, "\\section*{Problem Name:}\n%s\n", safe_name);
-    fprintf(f, "\\section*{Mathematical Model}\n");
-    fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
-    for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-        double a = lp->objective_function->coeffs->coefficients[j];
-        if (a == 0.0) {
-            continue;
-        }
-        if (a < 0.0) {
-            fprintf(f, j == 0 ? "-" : " - ");
-        } else if (j > 0) {
-            fprintf(f, " + ");
-        }
-        fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
-    }
-    fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.\t}\n");
-    for (size_t i = 0; i < lp->constraints->count; ++i) {
-        for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-            double a = lp->constraints->coeff_sets[i]->coefficients[j];
-            if (a == 0.0) {
-                continue;
-            }
-            if (a < 0.0) {
-                fprintf(f, j == 0 ? "-" : " - ");
-            } else if (j > 0) {
-                fprintf(f, " + ");
-            }
-            fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
-        }
-        fprintf(f, " &\\le %.4g \\\\\n", lp->constraints->rhs_values[i]);
-    }
-    fprintf(f, "x_j &\\ge 0\\quad\\text{for every variable }j\n\\end{align*}\n");
+    // Problem Definition (name and mathematical model)
+    presentation_original_problem(f, safe_problem_name, lp);
 
+    // fprintf(f, "\\section*{Problem Name:}\n%s\n", safe_problem_name);
+    // fprintf(f, "\\section*{Mathematical Model}\n");
+    // fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
+    // for (size_t j = 0; j < lp->num_decision_vars; ++j) {
+    //     double a = lp->objective_function->coeffs->coefficients[j];
+    //     if (a == 0.0) {
+    //         continue;
+    //     }
+    //     if (a < 0.0) {
+    //         fprintf(f, j == 0 ? "-" : " - ");
+    //     } else if (j > 0) {
+    //         fprintf(f, " + ");
+    //     }
+    //     fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
+    // }
+    // fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.\t}\n");
+    // for (size_t i = 0; i < lp->constraints->count; ++i) {
+    //     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
+    //         double a = lp->constraints->coeff_sets[i]->coefficients[j];
+    //         if (a == 0.0) {
+    //             continue;
+    //         }
+    //         if (a < 0.0) {
+    //             fprintf(f, j == 0 ? "-" : " - ");
+    //         } else if (j > 0) {
+    //             fprintf(f, " + ");
+    //         }
+    //         fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
+    //     }
+    //     fprintf(f, " &\\le %.4g \\\\\n", lp->constraints->rhs_values[i]);
+    // }
+    // fprintf(f, "x_j &\\ge 0\\quad\\text{for every variable }j\n\\end{align*}\n");
+
+    // Print initial tableau
     write_tableau(f, spt, initial_snapshot, "Initial table");
 
     if (include_intermediate && history_count > 0) {
@@ -342,7 +339,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
 
     fprintf(f, "\\end{document}\n");
     fclose(f);
-    g_free(safe_name); g_free(safe_members); g_free(safe_course); g_free(safe_semester);
+    g_free(safe_problem_name);
 
     gchar *argv[] = { (gchar *)"pdflatex", (gchar *)"-interaction=nonstopmode",
                       (gchar *)"-halt-on-error", (gchar *)tex_path, NULL };
@@ -438,10 +435,9 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
                 show_error("Every coefficient from constraints must have a valid number."); return;
             }
         }
-        //TODO: Double-check if the constraints' RHS have to be non-negative. If not, remove the check below.
-        if (!parse_entry_number(app.constraint_rhs_entries[i], &rhs) || rhs < 0) {
+        if (!parse_entry_number(app.constraint_rhs_entries[i], &rhs)) {
             lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
-            show_error("Each right-hand side must be a real number greater than or equal to zero."); return;
+            show_error("Every right-hand side must have a valid number."); return;
         }
         LPCoefficients *row = lp_coefficients_create_from_array(app.nvars, row_values);
         if (!row) {
@@ -576,9 +572,6 @@ int main(int argc, char **argv) {
     app.objective_fields_box = get_widget("objective_fields_box");
     app.constraints_fields_box = get_widget("constraints_fields_box");
     app.show_intermediate_check = get_widget("show_intermediate_check");
-    app.members_entry = get_widget("members_entry");
-    app.course_entry = get_widget("course_entry");
-    app.semester_entry = get_widget("semester_entry");
     app.output_status_label = get_widget("output_status_label");
 
     if (!app.window || !app.objective_fields_box || !app.constraints_fields_box) {
