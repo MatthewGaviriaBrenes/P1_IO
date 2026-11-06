@@ -471,15 +471,34 @@ void presentation_solution(FILE *file, const SPTableau *tableau,
         case SPT_MULTPILE_SOLUTIONS_DETECTED:
             fprintf(file, "\\item Multiple optimal solutions detected.\n");
             if (multiple_solutions != NULL) {
+
+                SPBaseSolution *solution_m1 = sp_multi_solutions_calculate_midpoint(multiple_solutions, 0.5);
+                SPBaseSolution *solution_m2 = sp_multi_solutions_calculate_midpoint(multiple_solutions, 0.25);
+                SPBaseSolution *solution_m3 = sp_multi_solutions_calculate_midpoint(multiple_solutions, 0.75);
+
                 presentation_print_base_solution(
                     file, tableau, multiple_solutions->bfs_a,
                     "First optimal solution");
                 presentation_print_base_solution(
                     file, tableau, multiple_solutions->bfs_b,
                     "Second optimal solution");
-                fprintf(file,
-                    "\\item Any convex combination of both solutions "
-                    "is also optimal.\n");
+                fprintf(file, "\\Additional basic solutions found using the following equation:\n");
+                fprintf(file, "\\[\\text{Middlepoint Solution} = \\alpha \\cdot \\text{BFS A} + (1 - \\alpha) \\cdot \\text{BFS B}\\]\n");
+
+                presentation_print_base_solution(
+                    file, tableau, solution_m1,
+                    "Calculated solution (Alpha = 0.5)");
+                presentation_print_base_solution(
+                    file, tableau, solution_m2,
+                    "Calculated solution (Alpha = 0.25)");
+                presentation_print_base_solution(
+                    file, tableau, solution_m3,
+                    "Calculated solution (Alpha = 0.75)");
+
+                sp_base_solution_free(solution_m1);
+                sp_base_solution_free(solution_m2);
+                sp_base_solution_free(solution_m3);
+                
             } else {
                 fprintf(file,
                     "\\item Solver detected multiplicity, but the two "
