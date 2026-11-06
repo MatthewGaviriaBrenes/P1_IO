@@ -45,22 +45,22 @@ Slack variables and other non-decision variables can be inferred by type of LP c
 
 ### Simplex Tableau - Solver Functionality (Advanced)
 * [X] - Handle unbounded problems.
-* [ ] - Handle degenerated problems.
-* [ ] - Handle multiple solutions in Simplex tableau.
-* [ ] - Implement mechanism to search solutions between two solutions (calculated from multi-solution Simplex tableau). Consider new data entity (e.g. SPMultiSolutCalculator).
+* [X] - Handle degenerated problems.
+* [X] - Handle multiple solutions in Simplex tableau.
+* [X] - Implement mechanism to search solutions between two solutions (calculated from multi-solution Simplex tableau). Consider new data entity (e.g. SPMultiSolutCalculator).
 
 
 ## GUI (GTK + Glade)
-* [ ] - Main window.
-* [ ] - Receive user inputs for number of decision variables and constraints.
-* [ ] - Custom names for decision variables.
-* [ ] - Define objective function.
-* [ ] - Define constraints.
-* [ ] - Let user start execution of program when ready.
-* [ ] - Error case: Incomplete information.
-* [ ] - Error error case: Invalid information.
-* [ ] - Error error case: Unbounded case.
-* [ ] - Notify user that run is complete.
+* [X] - Main window.
+* [X] - Receive user inputs for number of decision variables and constraints.
+* [X] - Custom names for decision variables.
+* [X] - Define objective function.
+* [X] - Define constraints.
+* [X] - Let user start execution of program when ready.
+* [X] - Error case: Incomplete information.
+* [X] - Error error case: Invalid information.
+* [X] - Error error case: Unbounded case.
+* [X] - Notify user that run is complete.
 * [ ] - OPTIONAL: Let user select destination for generated file (default to working directory.)
 * [ ] - >>> TO BE UPDATED...
  

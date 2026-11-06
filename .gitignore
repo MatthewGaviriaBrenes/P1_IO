@@ -1,8 +1,12 @@
 out/
+*.code-workspace
 *.exe
 *.tex
-*.code-workspace
+informe_simplex.aux
 informe_simplex.fdb_latexmk
+informe_simplex.fls
+informe_simplex.log
 informe_simplex.pdf
 informe_simplex.tex
 
+informe_simplex.synctex.gz

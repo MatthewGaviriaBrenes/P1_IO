@@ -71,22 +71,22 @@ void sp_test_base_run(LPDefinition *lp_def, const char *problem_name){
         presentation_solution(tex_file, spt, spt_status, NULL);presentation_solution(tex_file, spt, spt_status, NULL);
         switch (spt_status) {
             case SPT_OPTIMAL_SOLUTION_FOUND:
-                printf("\nOptimal solution found after %zu steps. See below for details on found base solution:\n", step_count - 1);
+                printf("\nOptimal solution found after %zu steps.\nSee below for details on found base solution:\n", step_count - 1);
                 break;
             case SPT_DEGENERATED_LOOP:
-                printf("\nProblem is stuck in a degenerated loop after %zu steps. See below for details on current base solution:\n", step_count - 1);
+                printf("\nProblem is stuck in a degenerated loop after %zu steps without improvements in objective value.\nThe Simplex Solver has stopped execution to avoid a potential infinite loop.\nSee below for details on current base solution:\n", step_count - 1);
                 break;
             case SPT_UNBOUNDED_PROBLEM:
-                printf("\nUnbounded problem detected after %zu steps. See below for details on current base solution:\n", step_count - 1);
+                printf("\nUnbounded problem detected after %zu steps. The problem may be lacking additional or more restrictive constraints.\nPlease review the problem formulation and add (or update) any necessary constraints.\nSee below for details on current base solution:\n", step_count - 1);
                 break;
-            case SPT_INFEASIBLE_PROBLEM:
-                printf("\nInfeasible problem detected after %zu steps. See below for details on current base solution:\n", step_count - 1);
+            case SPT_INFEASIBLE_PROBLEM:        // for V2
+                printf("\nInfeasible problem detected after %zu steps.\nSee below for details on current base solution:\n", step_count - 1);
                 break;
             case SPT_INVALID_STATE:
-                printf("\nInvalid state detected after %zu steps. No \n", step_count - 1);
+                printf("\nInvalid state detected after %zu steps. Execution cannot continue.\n", step_count - 1);
                 break;
             default:
-                printf("\nUnexpected status after %zu steps.\n", step_count - 1);
+                printf("\nUnexpected status after %zu steps. Execution cannot continue.\n", step_count - 1);
                 break;
         }
         printf("\nTableau's current base solution:\n");

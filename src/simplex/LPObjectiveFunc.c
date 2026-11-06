@@ -52,29 +52,29 @@ void lp_objectivefunc_free(LPObjectiveFunc *obj_func) {
 }
 
 // Print the details of the objective function for debugging purposes.
-void lp_objectivefunc_print(const LPObjectiveFunc *obj_func, const LPDecisionVars *decision_vars) {
-    if (obj_func == NULL) {
-        //printf("Error: LPObjectiveFunc struct is NULL.\n");
-        return;
-    }
-    if (decision_vars && decision_vars->length != obj_func->coeffs->length) {
-        //printf("Error: LPDecisionVars count does not match the number of coefficients in the objective function.\n");
-        return;
-    }
-    //printf("--- Objective Function ---\n");
-    switch (obj_func->type) {
-        case MAXIMIZE:
-            //printf("Maximize: \n");
-            break;
-        case MINIMIZE:
-            //printf("Minimize: \n");
-            break;
-        default:
-            //printf("Error: Unknown objective function type\n");
-            return;
-    }
-    //printf("Z = ");
-    // Print the coefficients for the objective function
-    lp_coefficients_print(obj_func->coeffs, decision_vars);
-    //printf("\n\n");
-}
+// void lp_objectivefunc_print(const LPObjectiveFunc *obj_func, const LPDecisionVars *decision_vars) {
+//     if (obj_func == NULL) {
+//         printf("Error: LPObjectiveFunc struct is NULL.\n");
+//         return;
+//     }
+//     if (decision_vars && decision_vars->length != obj_func->coeffs->length) {
+//         printf("Error: LPDecisionVars count does not match the number of coefficients in the objective function.\n");
+//         return;
+//     }
+//     printf("--- Objective Function ---\n");
+//     switch (obj_func->type) {
+//         case MAXIMIZE:
+//             printf("Maximize: \n");
+//             break;
+//         case MINIMIZE:
+//             printf("Minimize: \n");
+//             break;
+//         default:
+//             printf("Error: Unknown objective function type\n");
+//             return;
+//     }
+//     printf("Z = ");
+//     // Print the coefficients for the objective function
+//     lp_coefficients_print(obj_func->coeffs, decision_vars);
+//     printf("\n\n");
+// }

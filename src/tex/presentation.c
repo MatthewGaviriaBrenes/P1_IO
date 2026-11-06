@@ -486,10 +486,11 @@ void presentation_solution(FILE *file, const SPTableau *tableau,
 
         case SPT_UNBOUNDED_PROBLEM:
             fprintf(file,
-                "\\item Unbounded Problem: No finite optimal value.\n");
+                "\\item Unbounded Problem: A constraint is missing or not properly defined, leading to an unbounded solution. "
+                "Please review the problem formulation and add (or update) any necessary constraints.\n");
             break;
 
-        case SPT_INFEASIBLE_PROBLEM:
+        case SPT_INFEASIBLE_PROBLEM:        // for V2
             fprintf(file,
                 "\\item The problem is infeasible: no solution exists "
                 "that satisfies all constraints.\n");
@@ -509,8 +510,8 @@ void presentation_solution(FILE *file, const SPTableau *tableau,
 
         case SPT_DEGENERATED_LOOP:
             fprintf(file,
-                "\\item The algorithm reached degeneracy limit and "
-                "stopped without confirming an optimal solution.\n");
+                "\\item The algorithm reached the degeneracy limit and stopped executing to avoid a potential infinite loop. "
+                "An optimal solution cannot be confirmed.\n");
             break;
 
         case SPT_STANDBY:

@@ -114,7 +114,7 @@
                           <object class="GtkLabel" id="variables_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Variables (2–15):</property>
+                            <property name="label">Decision Variables (2–15):</property>
                             <property name="xalign">0</property>
                           </object>
                           <packing>
@@ -247,7 +247,7 @@
                           <object class="GtkLabel" id="objective_help_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Enter the name of variables and their coefficients on the following spaces.</property>
+                            <property name="label">Enter the name for each decision variable and its coefficient for the objective function in the following fields.</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
                           </object>
@@ -307,7 +307,7 @@
                           <object class="GtkLabel" id="constraints_help_label">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label">Specify the coefficients for the decision variables (in order), the operator, and the expected bound (RHS) for each constraint. This version only works with ≤.</property>
+                            <property name="label">Specify the coefficients for each decision variable (in the same order as the objective function), the operation (≤, ≥, =), and the expected bound (RHS) for each constraint. This version only works with ≤ (less or equal) operations.</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
                           </object>

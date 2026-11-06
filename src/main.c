@@ -109,8 +109,8 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
     GtkWidget *coef_col = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     gtk_box_pack_start(GTK_BOX(app.objective_fields_box), name_col, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(app.objective_fields_box), coef_col, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(name_col), make_label("Variable"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(coef_col), make_label("coefficient"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(name_col), make_label("Name"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(coef_col), make_label("Coefficient"), FALSE, FALSE, 0);
     for (int j = 0; j < nv; ++j) {
         char var_default[32], coef_default[16];
         g_snprintf(var_default, sizeof(var_default), "x%d", j + 1);
@@ -283,12 +283,8 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     presentation_simplex_slide(f);
     
     //Los nombres de los usuarios del programa
-    fprintf(f, "\\section*{Problem}\n"
-               "\\textbf{Name:} %s\\\\\n\\textbf{Course:} %s\\\\\n"
-               "\\textbf{Members:} %s\\\\\n\\textbf{Semester:} %s\n"
-               "\\section*{Mathematical Model}\n", safe_name, safe_course,
-               safe_members, safe_semester);
-    //fprintf(f, "\\section*{Mathematical Model}\n");
+    fprintf(f, "\\section*{Problem Name:}\n%s\n", safe_name);
+    fprintf(f, "\\section*{Mathematical Model}\n");
     fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
         double a = lp->objective_function->coeffs->coefficients[j];
@@ -302,7 +298,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
         }
         fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
     }
-    fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.}\n");
+    fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.\t}\n");
     for (size_t i = 0; i < lp->constraints->count; ++i) {
         for (size_t j = 0; j < lp->num_decision_vars; ++j) {
             double a = lp->constraints->coeff_sets[i]->coefficients[j];
@@ -326,7 +322,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
         fprintf(f, "\\section*{Middle tables}\nTable states were saved during the iterations\\par\n");
         for (size_t k = 0; k < history_count; ++k) {
             char caption[64];
-            g_snprintf(caption, sizeof(caption), "Pivot step %zu", k + 1);
+            g_snprintf(caption, sizeof(caption), "Step %zu", k + 1);
             SPTableau snapshot_tableau = *spt;
             snapshot_tableau.tableau = history[k].tableau.cells;
             presentation_intermediate_tableau(f, &snapshot_tableau, 
@@ -442,6 +438,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
                 show_error("Every coefficient from constraints must have a valid number."); return;
             }
         }
+        //TODO: Double-check if the constraints' RHS have to be non-negative. If not, remove the check below.
         if (!parse_entry_number(app.constraint_rhs_entries[i], &rhs) || rhs < 0) {
             lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
             show_error("Each right-hand side must be a real number greater than or equal to zero."); return;
@@ -528,7 +525,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
                                            &initial_snapshot, history, history_count);
     gchar *summary = g_strdup_printf("%s Steps: %zu. %s",
                                      result_message, steps,
-                                     pdf_ok ? "PDF generated: informe_simplex.pdf" : "Couldn't generate PDF.");
+                                     pdf_ok ? "\nPDF generated: informe_simplex.pdf" : "\nCouldn't generate PDF.");
     set_status(summary);
     show_info(summary);
     g_free(summary);

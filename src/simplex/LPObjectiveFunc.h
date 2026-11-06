@@ -25,7 +25,7 @@ void lp_objectivefunc_free(LPObjectiveFunc *obj_func);
 
 // Print the details of the objective function for debugging purposes.
 // DecisionVariable struct can be passed to display the coefficients alongside their corresponding variable names. If NULL, will print generic variable names.
-void lp_objectivefunc_print(const LPObjectiveFunc *obj_func, const LPDecisionVars *decision_vars);
+// void lp_objectivefunc_print(const LPObjectiveFunc *obj_func, const LPDecisionVars *decision_vars);
 
 
 #endif
