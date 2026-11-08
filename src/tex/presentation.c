@@ -173,7 +173,7 @@ void presentation_tableau(FILE *file,
             fprintf(file, "$S_{%zu}$", col - tableau->num_decision_vars);
         } else if (col <= tableau->num_decision_vars +
                           tableau->num_slack_vars +
-                          tableau->num_surplus_vars) {
+                          tableau->num_excess_vars) {
             fprintf(file, "$E_{%zu}$",
                     col - tableau->num_decision_vars -
                     tableau->num_slack_vars);
@@ -181,7 +181,7 @@ void presentation_tableau(FILE *file,
             fprintf(file, "$A_{%zu}$",
                     col - tableau->num_decision_vars -
                     tableau->num_slack_vars -
-                    tableau->num_surplus_vars);
+                    tableau->num_excess_vars);
         }
     }
 
@@ -265,11 +265,11 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
         } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars) {
             fprintf(file, "$S_{%zu}$", col - tableau->num_decision_vars);
         
-        } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars + tableau->num_surplus_vars) {
+        } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars + tableau->num_excess_vars) {
             fprintf(file, "$E_{%zu}$", col - tableau->num_decision_vars - tableau->num_slack_vars);
         
         } else {
-            fprintf(file, "$A_{%zu}$", col - tableau->num_decision_vars - tableau->num_slack_vars - tableau->num_surplus_vars);
+            fprintf(file, "$A_{%zu}$", col - tableau->num_decision_vars - tableau->num_slack_vars - tableau->num_excess_vars);
         
         }
     }

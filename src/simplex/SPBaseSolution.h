@@ -18,11 +18,13 @@ typedef struct {
 
     size_t num_decision_vars; // Number of decision variables in the BS
     size_t num_slack_vars; // Number of slack variables in the BS
+    size_t num_excess_vars; // Number of excess variables in the BS
+    size_t num_artificial_vars; // Number of artificial variables in the BS
 } SPBaseSolution;
 
 // Create base BS entry with a given number of decision and slack variables. Returns a pointer to the created SPBaseSolution struct.
 // Includes Z value as part of the BS (index 0, iniialized as 0.0).
-SPBaseSolution *sp_base_solution_create(size_t num_decision_vars, size_t num_slack_vars);
+SPBaseSolution *sp_base_solution_create(size_t num_decision_vars, size_t num_slack_vars, size_t num_excess_vars, size_t num_artificial_vars);
 
 // Free the BS struct and its associated resources.
 void sp_base_solution_free(SPBaseSolution *spbs);
@@ -32,6 +34,12 @@ size_t sp_base_solution_get_num_decision_vars(const SPBaseSolution *spbs);
 
 // Get the number of slack variables in the BS.
 size_t sp_base_solution_get_num_slack_vars(const SPBaseSolution *spbs);
+
+// Get the number of excess variables in the BS.
+size_t sp_base_solution_get_num_excess_vars(const SPBaseSolution *spbs);
+
+// Get the number of artificial variables in the BS.
+size_t sp_base_solution_get_num_artificial_vars(const SPBaseSolution *spbs);
 
 // Get the total number of variables in the SPBaseSolution struct (Z + decision vars + slack vars).
 // Useful for functions iterating through the struct's arrays.

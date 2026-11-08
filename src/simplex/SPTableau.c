@@ -23,24 +23,53 @@ SPTableau *sp_tableau_create(LPDefinition *lp_def) {
         return NULL;
     }
 
-    // Set up default values for the SPTableau struct field before initializing it.
+    // Set up default values for the SPTableau struct's fields before initializing them.
     spt->lp_def = lp_def;
     spt->tableau = NULL;
+    spt->big_M = NULL;
     spt->num_rows = spt->num_cols = 0;
     spt->num_decision_vars = spt->num_constraints = 0;
-    spt->num_slack_vars = spt->num_surplus_vars = spt->num_artificial_vars = 0;
+    spt->num_slack_vars = spt->num_excess_vars = spt->num_artificial_vars = 0;
     spt->degeneration_level = 0;
+    spt->two_step_method = false;
 
     // Initialize the tableau and aborth if any step fails.
     if (!sp_tableau_init_baseline(spt) ||
         !sp_tableau_init_objective_func_row(spt) ||
+        !sp_tableau_init_big_M_row(spt) ||
         !sp_tableau_init_constraints_rows(spt)) {
         //printf("Error: Failed to initialize the tableau.\n");
         sp_tableau_free(spt);
         return NULL;
     }
 
+    // Set the Two-Step Method flag based on the presence of artificial variables in the tableau after initialization.
+    spt->two_step_method = (spt->num_artificial_vars > 0);
+
     return spt;
+}
+
+// Free the memory allocated for the SPTableau struct and its associated resources.
+// Caller must ensure that the LPDefinition struct is freed separately if it was dynamically allocated.
+void sp_tableau_free(SPTableau *spt) {
+    if (spt == NULL) {
+        return;
+    }
+
+    // Free the tableau's data
+    if (spt->tableau != NULL) {
+        for (size_t row = 0; row < spt->num_rows; row++) {
+            free(spt->tableau[row]);
+        }
+        free(spt->tableau);
+    }
+
+    // Free the big M coefficients array
+    if (spt->big_M != NULL) {
+        free(spt->big_M);
+    }
+
+    free(spt);
 }
 
 // Helper initialization function: Create the baseline tableau given the LP definition's baseline information.
@@ -55,8 +84,8 @@ bool sp_tableau_init_baseline(SPTableau *spt) {
     spt->num_constraints = spt->lp_def->num_constraints;
 
     spt->num_slack_vars = 0;
-    spt->num_surplus_vars = 0; // For v2, if needed
-    spt->num_artificial_vars = 0; // For v2, if needed
+    spt->num_excess_vars = 0; 
+    spt->num_artificial_vars = 0; 
 
 
     // Loop to calculate slack, surplus, and artificial variables based on the constraints
@@ -66,7 +95,7 @@ bool sp_tableau_init_baseline(SPTableau *spt) {
                 spt->num_slack_vars++;
                 break;
             case GE:
-                spt->num_surplus_vars++;
+                spt->num_excess_vars++;
                 spt->num_artificial_vars++;
                 break;
             case EQ:
@@ -81,7 +110,7 @@ bool sp_tableau_init_baseline(SPTableau *spt) {
     // Rows in the tableau: One for each constraint + one for the objective function (row 0).
     // Columns in the tableau: One for the Z value (col. 0) + one for each variable (decision, slack, surplus, artificial) + one for the RHS value (last column).
     spt->num_rows = 1 + spt->num_constraints;
-    spt->num_cols = 2 + spt->num_decision_vars + spt->num_slack_vars + spt->num_surplus_vars + spt->num_artificial_vars;
+    spt->num_cols = 2 + spt->num_decision_vars + spt->num_slack_vars + spt->num_excess_vars + spt->num_artificial_vars;
 
     // Allocate memory for the tableau 2D array
     spt->tableau = (double **)malloc(spt->num_rows * sizeof(double *));
@@ -128,8 +157,8 @@ bool sp_tableau_init_objective_func_row(SPTableau *spt) {
 
     // Get indices for first slack, surplus, and artificial variables in the tableau
     size_t slack_start_col = 1 + spt->num_decision_vars;   // Slack vars go after decision vars
-    size_t surplus_start_col = slack_start_col + spt->num_slack_vars;  // Suprlus vars go after slack vars (for v2)
-    size_t artificial_start_col = surplus_start_col + spt->num_surplus_vars; // Artificial vars go after surplus vars (for v2)
+    size_t excess_start_col = slack_start_col + spt->num_slack_vars;  // Suprlus vars go after slack vars (for v2)
+    size_t artificial_start_col = excess_start_col + spt->num_excess_vars; // Artificial vars go after surplus vars (for v2)
 
     for (size_t j = slack_start_col; j < artificial_start_col + spt->num_artificial_vars; j++) {
         spt->tableau[0][j] = 0.0;
@@ -137,6 +166,26 @@ bool sp_tableau_init_objective_func_row(SPTableau *spt) {
 
     // The last column (RHS value) in the objective function row is also initialized to 0
     spt->tableau[0][spt->num_cols - 1] = 0.0;
+    return true;
+}
+
+// Helper initialization function: Initialize the Big M row in the tableau`
+// Returns boolean to confirm successful initialization.
+// Must be called after sp_tableau_init_objective_func_row.
+bool sp_tableau_init_big_M_row(SPTableau *spt) {
+    if (spt == NULL || spt->lp_def == NULL || spt->lp_def->constraints == NULL) {
+        //printf("Error: Tableau or its LP definition or constraints is NULL.\n");
+        return false;
+    } else if (spt->num_cols <= 0) {
+        //printf("Error: Tableau has no columns to initialize Big M row.\n");
+        return false;
+    } 
+
+    spt->big_M = (double *)calloc(spt->num_cols, sizeof(double));
+    if (!spt->big_M) {
+        //printf("Error: Memory allocation failed for Big M coefficients array.\n");
+        return false;
+    }
     return true;
 }
 
@@ -150,8 +199,8 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt) {
 
     // Variables of each type occupy their own contiguous block of columns.
     size_t slack_start_col = 1 + spt->num_decision_vars;
-    size_t surplus_start_col = slack_start_col + spt->num_slack_vars;
-    size_t artificial_start_col = surplus_start_col + spt->num_surplus_vars;
+    size_t excess_start_col = slack_start_col + spt->num_slack_vars;
+    size_t artificial_start_col = excess_start_col + spt->num_excess_vars;
 
     // Counter to ensure that slack/surplus/artificial vars are placed in the 
     // correct columns for each constraint row.
@@ -159,8 +208,9 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt) {
     size_t surplus_index = 0;
     size_t artificial_index = 0;
 
+    // Initialize the constraint rows in the tableau (rows 1 to num_constraints)
     for (size_t i = 0; i < spt->num_constraints; i++) {
-        // Column 0 is for the Z value, which is initialized to 0 for all constraint rows.
+        // Column 0 is for the Z value, which is initialized to 0 for all constraint rows
         spt->tableau[1 + i][0] = 0.0;
 
         // Fill in the coefficients of the decision variables for each constraint row
@@ -168,16 +218,28 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt) {
             spt->tableau[1 + i][1 + j] = spt->lp_def->constraints->coeff_sets[i]->coefficients[j];
         }
 
-        // Fill in the slack, surplus, and artificial variables based on the constraint type.
+        // Fill in the coefficients for the slack, surplus and artificial variables based on the constraint type.
+        // For artificial variables, also initialize the corresponding Big M coefficient in the struct's big_M array.
+        // -1M for maximization problems and +1M for minimization problems.
         switch (spt->lp_def->constraints->types[i]) {
             case LE:
                 spt->tableau[1 + i][slack_start_col + slack_index++] = 1.0;
                 break;
             case GE:
-                spt->tableau[1 + i][surplus_start_col + surplus_index++] = -1.0;
+                if (spt->lp_def->objective_function->type == MAXIMIZE) {
+                    spt->big_M[artificial_start_col + artificial_index] = -1;  
+                } else if (spt->lp_def->objective_function->type == MINIMIZE) {
+                    spt->big_M[artificial_start_col + artificial_index] = 1;    
+                }
+                spt->tableau[1 + i][excess_start_col + surplus_index++] = -1.0;
                 spt->tableau[1 + i][artificial_start_col + artificial_index++] = 1.0;
                 break;
             case EQ:
+                if (spt->lp_def->objective_function->type == MAXIMIZE) {
+                    spt->big_M[artificial_start_col + artificial_index] = -1;   
+                } else if (spt->lp_def->objective_function->type == MINIMIZE) {
+                    spt->big_M[artificial_start_col + artificial_index] = 1;    
+                }
                 spt->tableau[1 + i][artificial_start_col + artificial_index++] = 1.0;
                 break;
             default:
@@ -191,23 +253,6 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt) {
     return true;
 }
 
-// Free the memory allocated for the SPTableau struct and its associated resources.
-// Caller must ensure that the LPDefinition struct is freed separately if it was dynamically allocated.
-void sp_tableau_free(SPTableau *spt) {
-    if (spt == NULL) {
-        return;
-    }
-
-    // Free the tableau's data
-    if (spt->tableau != NULL) {
-        for (size_t i = 0; i < spt->num_rows; i++) {
-            free(spt->tableau[i]);
-        }
-        free(spt->tableau);
-    }
-    free(spt);
-}
-
 // Get the current BFS (Base Feasible Solution) from the tableau.
 // Returns a pointer to the created SPBaseSolution struct.
 // Caller is responsible for freeing the memory allocated for the SPBaseSolution struct after use.
@@ -217,7 +262,7 @@ SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt) {
         return NULL;
     }
 
-    SPBaseSolution *spbs = sp_base_solution_create(spt->num_decision_vars, spt->num_slack_vars);
+    SPBaseSolution *spbs = sp_base_solution_create(spt->num_decision_vars, spt->num_slack_vars, spt->num_excess_vars, spt->num_artificial_vars);
     if (!spbs) {
         //printf("Error: Failed to create BFS from tableau.\n");
         return NULL;
@@ -239,6 +284,7 @@ SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt) {
 
 // Validate a provided BFS against the tableau's constraints.
 // Does not confirm optimal solution.
+//TODO: Add validation for >= and == constraints in v2.
 bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs) {
     if (spt == NULL || spt->tableau == NULL || spbs == NULL) {
         //printf("Error: Tableau or its data or BFS is NULL.\n");
@@ -332,8 +378,30 @@ double **sp_tableau_take_snapshot(const SPTableau *spt) {
     return snapshot;
 }
 
+// Returns a snapshot of the tableau's big M quotients as an array of doubles.
+// To be used if intermediate tableau states need to be displayed.
+// Caller is responsible for freeing the memory allocated for the snapshot after use.
+double *sp_tableau_take_big_M_snapshot(const SPTableau *spt) {
+    if (spt == NULL || spt->big_M == NULL) {
+        //printf("Error: Tableau or its big M array is NULL.\n");
+        return NULL;
+    }
+
+    double *snapshot = malloc(spt->num_cols * sizeof(*snapshot));
+    if (!snapshot) {
+        //printf("Error: Memory allocation failed for big M snapshot.\n");
+        return NULL;
+    }
+
+    for (size_t j = 0; j < spt->num_cols; j++) {
+        snapshot[j] = spt->big_M[j];
+    }
+    return snapshot;
+}
+
 // Check if the specified column in the tableau is a base column (i.e., corresponds to a basic variable).
 // Returns true if the column is a base column, false otherwise.
+//TODO: Update to check for artificial variables as base variables in v2.
 bool sp_tableau_is_base_column(const SPTableau *spt, size_t col_index) {
     if (spt == NULL || spt->tableau == NULL) {
         //printf("Error: Tableau or its data is NULL.\n");
@@ -351,6 +419,11 @@ bool sp_tableau_is_base_column(const SPTableau *spt, size_t col_index) {
         return false; // Not a valid base variable column
     }
 
+    // A base column has no big M coefficient associated with it. 
+    if (spt->big_M[col_index] != 0.0) {
+        return false;
+    }
+
     // A base column has exactly one entry of 1 and all other entries are 0.
     size_t count_of_ones = 0;
     for (size_t i = 0; i < spt->num_rows; i++) {
@@ -365,6 +438,7 @@ bool sp_tableau_is_base_column(const SPTableau *spt, size_t col_index) {
 
 // Check if the specified variable (by tableau index) in the tableau is a base variable.
 // Returns true if the variable is a base variable, false otherwise.
+//TODO: Update to check for artificial variables as base variables in v2.
 bool sp_tableau_is_base_variable(const SPTableau *spt, size_t var_index) {
     if (spt == NULL || spt->tableau == NULL) {
         //printf("Error: Tableau or its data is NULL.\n");
@@ -416,6 +490,8 @@ double sp_tableau_get_z_value(const SPTableau *spt) {
 
 // Get the next variable entering the basis (pivot column) based on the current tableau state.
 // Returns the index of the pivot column, or 0 if no valid pivot column is found (solution found).
+//TODO: Validate changes for big M coefficients in v2.
+//TODO: Handle degeneration where more than two columns are candidates.
 size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
     if (spt == NULL || spt->tableau == NULL) {
         //printf("Error: Tableau or its data is NULL.\n");
@@ -425,7 +501,10 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
     // Initialize pivot column to zero (Z column), will be updated to the index of the pivot column.
     // If no valid pivot column is found, assume that the solution is optimal and return 0.
     size_t select_pivot_col = 0; 
+
+    // Best coefficient and big M coefficient selected so far. Used to prioritize pivot column selection.
     double best_value = 0.0; 
+    double best_big_m = 0.0;
 
     for (size_t col_index = 1; col_index < spt->num_cols - 1; col_index++) { // Exclude Z column (0) and RHS column (last)
         double value = spt->tableau[0][col_index];
@@ -437,16 +516,40 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
                 select_pivot_col = col_index; 
             }
         }
-        // Maximization: Look for the most negative coefficient in the objective function row (row 0).
+
+        // Two decision variables have the same coefficients (normal and big M).
+        // Use a random binary selection as a tiebreaker.
+        //TODO: Check if tie in entering variables means the problem is degenerated.
+        else if (value == best_value && spt->big_M[col_index] == best_big_m) {
+            if (rand() % 2 == 0) {
+                select_pivot_col = col_index;
+            }
+        }
+
+        // Maximization: Look for the most negative coefficient in the objective function row (row 0), including big M.
+        // If the selected column has a big M coefficient, prioritize it based on its big M coefficient.
         else if (spt->lp_def->objective_function->type == MAXIMIZE) {
-            if (value < best_value) {
+            if (spt->big_M[col_index] != 0.0) {
+                if (spt->big_M[col_index] < best_big_m) {
+                    best_big_m = spt->big_M[col_index];
+                    best_value = value;
+                    select_pivot_col = col_index;
+                }
+            } else if ((value < best_value) && (best_big_m == 0.0)) {
                 best_value = value;
                 select_pivot_col = col_index;
             }
         } 
-        // Minimization: Look for the most positive coefficient in the objective function row (row 0).
-        else {
-            if (value > best_value) {
+        // Minimization: Look for the most positive coefficient in the objective function row (row 0), including big M.
+        // If the selected column has a big M coefficient, prioritize it based on the big M coefficient.
+        else if (spt->lp_def->objective_function->type == MINIMIZE) {
+            if (spt->big_M[col_index] != 0.0) {
+                if (spt->big_M[col_index] > best_big_m) {
+                    best_big_m = spt->big_M[col_index];
+                    best_value = value;
+                    select_pivot_col = col_index;
+                }
+            } else if ((value > best_value) && (best_big_m == 0.0)) {
                 best_value = value;
                 select_pivot_col = col_index;
             }
@@ -521,12 +624,12 @@ size_t sp_tableau_get_pivot_row(const SPTableau *spt, size_t pivot_col_index, do
                 pivot_row_index = row;
             }
             // If two rows have the same minimum ratio, apply tie-breaking rules to select the pivot row.
+            //TODO: Confirm if this also indicates a degenerate solution.
             if (min_ratio == new_ratio) {
                 double current_row_coeff  = spt->tableau[pivot_row_index][pivot_col_index];
                 double entering_row_coeff  = spt->tableau[row][pivot_col_index];
                 pivot_row_index = (entering_row_coeff < current_row_coeff) ? row : pivot_row_index;
             }
-
         }
     }
     return pivot_row_index;
@@ -563,6 +666,7 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
 
 // Canonize the non-pivot rows to ensure that all other entries in the pivot column are zero.
 // Must be called after sp_tableau_canonize_pivot_row. 
+//TODO: Check and refine logic for handling big M.
 void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, size_t pivot_col_index) {
     if (spt == NULL || spt->tableau == NULL) {
         //printf("Error: Tableau or its data is NULL.\n");
@@ -577,23 +681,40 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
         return;
     }
 
-    // Normalize each non-pivot row to ensure that all other entries in the pivot column are zero.
+    // Canonize each non-pivot row to ensure that all other entries in the pivot column are zero.
     for (size_t np_row = 0; np_row < spt->num_rows; np_row++) {
+        // Skip the pivot row itself
         if (np_row == pivot_row_index) {
-            continue;   // Skip the pivot row
+            continue;   
         }
-        // If pivot column value in non-pivot row is zero, skip the row (already canonized).
+        // If pivot column coefficient in non-pivot row is zero, skip the row (already canonized).
         if (spt->tableau[np_row][pivot_col_index] == 0) {
+            // If also in objective row (row 0), check if the big M coefficient is zero.
+            if (np_row == 0 && spt->big_M[pivot_col_index] == 0) {
+                continue; // Skip if the non-pivot row is the objective function row and its big M coefficient is already zero.
+            }
             continue;
         }
 
         // Elimination factor: Get negative of the pivot column value in the non-pivot row to eliminate it (turn it to zero).
-        // Also used to scale the pivot row for elimination in the non-pivot row.
+        // Used to canonize the non-pivot rows by adding a scaled version of the pivot row to each non-pivot row.
         double eliminiation_factor = -spt->tableau[np_row][pivot_col_index];
 
+        // Big M Elimination factor: Get negative of the big M coefficient for the objective function row (row 0).
+        // If the non-pivot row is the objective function row (row 0), calculate the eliminiation factor for the big M coefficient.
+        double big_M_elimination = 0;
+        if (np_row == 0) { 
+            big_M_elimination = -spt->big_M[pivot_col_index];
+        }
+
         // Add the scaled pivot row to the non-pivot row to eliminate the pivot column value in the non-pivot row.
+        // If updating objective row (row 0), also update the big M coefficient for the pivot column to canonize it.
         for (size_t np_col = 1; np_col < spt->num_cols; np_col++) {
             spt->tableau[np_row][np_col] += eliminiation_factor * spt->tableau[pivot_row_index][np_col];
+
+            if (big_M_elimination != 0) { 
+                spt->big_M[np_col] += big_M_elimination * spt->big_M[pivot_col_index];
+            }
         }
     }
 }
@@ -743,7 +864,7 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
 //             //printf("s%zu\t", slack_var_count++);
 //         }
 //         // Print surplus variable names (e.g., e1, e2, e3, ...) for v2 if needed
-//         else if (var_index <= spt->num_decision_vars + spt->num_slack_vars + spt->num_surplus_vars) {
+//         else if (var_index <= spt->num_decision_vars + spt->num_slack_vars + spt->num_excess_vars) {
 //             //printf("e%zu\t", surplus_var_count++);
 //         }
 //         // Print artificial variable names (e.g., a1, a2, a3, ...) for v2 if needed

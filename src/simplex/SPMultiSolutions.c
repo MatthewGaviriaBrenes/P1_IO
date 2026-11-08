@@ -61,8 +61,11 @@ SPBaseSolution* sp_multi_solutions_calculate_midpoint(const SPMultiSolutions *mu
 
     size_t num_decision_vars = multi_solutions->bfs_a->num_decision_vars;
     size_t num_slack_vars = multi_solutions->bfs_a->num_slack_vars;
+    size_t num_excess_vars = multi_solutions->bfs_a->num_excess_vars;
+    size_t num_artificial_vars = multi_solutions->bfs_a->num_artificial_vars;
 
-    SPBaseSolution *midpoint_bfs = sp_base_solution_create(num_decision_vars, num_slack_vars);
+    //TODO: Update for excess and artificial variables in v2.
+    SPBaseSolution *midpoint_bfs = sp_base_solution_create(num_decision_vars, num_slack_vars, num_excess_vars, num_artificial_vars);
     if (midpoint_bfs == NULL) {
         //printf("Error: Memory allocation failed for midpoint BFS.\n");
         return NULL; // Memory allocation failed

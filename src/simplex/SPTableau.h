@@ -30,8 +30,9 @@ enum SPTableauStatus {
 
 // Struct for Simplex Tableau (SPTableau) information.
 typedef struct {
-    LPDefinition *lp_def; // Pointer to the definition of the linear programming problem (LPDefinition struct) for the Simplex Tableau.
-    double **tableau; // 2D array representing the Simplex tableau. Will be initialized by constructor funciton.
+    LPDefinition *lp_def;   // Pointer to the definition of the linear programming problem (LPDefinition struct) for the Simplex Tableau.
+    double **tableau;       // 2D array representing the Simplex tableau. Will be initialized by constructor funciton.
+    double *big_M;          // Array to hold the Big M coefficients for the tableau's objective function row.
 
     size_t num_rows;  // Number of rows in the tableau
     size_t num_cols;  // Number of columns in the tableau
@@ -40,8 +41,12 @@ typedef struct {
     size_t num_decision_vars; 
     size_t num_constraints;   
     size_t num_slack_vars;      
-    size_t num_surplus_vars;     // for v2
+    size_t num_excess_vars;     // for v2
     size_t num_artificial_vars; // for v2
+
+    // Flag to indicate if the tableau is using the two-step method (for problems with artificial variables).
+    // Will switch to false after the first step is completed (if applicable).
+    bool two_step_method; 
 
     // Additional fields for tracking the state of the tableau
     size_t degeneration_level;  // If problem is degenerated, counts steps the tableau stays degenerated. May be used to handle potential cycling. Defaults to 0.
@@ -49,6 +54,10 @@ typedef struct {
 
 // Create the tableaul for the given LPDefinition struct. Returns a pointer to the created SPTableau struct.
 SPTableau *sp_tableau_create(LPDefinition *lp_def);
+
+// Free the memory allocated for the SPTableau struct and its associated resources.
+// Caller must ensure that the LPDefinition struct is freed separately if it was dynamically allocated.
+void sp_tableau_free(SPTableau *spt);
 
 // Helper initialization function: Create the baseline tableau given the LP definition's baseline information.
 // Returns boolean to confirm successful initialization.
@@ -59,13 +68,15 @@ bool sp_tableau_init_baseline(SPTableau *spt);
 // Must be called after sp_tableau_init_baseline.
 bool sp_tableau_init_objective_func_row(SPTableau *spt);
 
+// Helper initialization function: Initialize the Big M row in the tableau`
+// Returns boolean to confirm successful initialization.
+// Must be called after sp_tableau_init_objective_func_row.
+bool sp_tableau_init_big_M_row(SPTableau *spt);
+
 // Helper function to add the constraints rows to the tableau. This function is called during the initialization of the tableau.
+// Will populate big M row with the coefficients of the artificial variables in the objective function row.
 // Must be called after sp_tableau_init_baseline.
 bool sp_tableau_init_constraints_rows(SPTableau *spt);
-
-// Free the memory allocated for the SPTableau struct and its associated resources.
-// Caller must ensure that the LPDefinition struct is freed separately if it was dynamically allocated.
-void sp_tableau_free(SPTableau *spt);
 
 // Get the current base solution for the tableau. 
 // Returns a pointer to the SPBaseSolution struct representing the current BFS.
@@ -81,6 +92,11 @@ bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs);
 // To be used if intermediate tableau states need to be displayed.
 // Caller is responsible for freeing the memory allocated for the snapshot after use.
 double **sp_tableau_take_snapshot(const SPTableau *spt);
+
+// Returns a snapshot of the tableau's big M quotients as an array of doubles.
+// To be used if intermediate tableau states need to be displayed.
+// Caller is responsible for freeing the memory allocated for the snapshot after use.
+double *sp_tableau_take_big_M_snapshot(const SPTableau *spt);
 
 // Check if the specified column in the tableau is a base column (i.e., corresponds to a basic variable).
 // Returns true if the column is a base column, false otherwise.
