@@ -205,7 +205,7 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt) {
     // Counter to ensure that slack/surplus/artificial vars are placed in the 
     // correct columns for each constraint row.
     size_t slack_index = 0;
-    size_t surplus_index = 0;
+    size_t excess_index = 0;
     size_t artificial_index = 0;
 
     // Initialize the constraint rows in the tableau (rows 1 to num_constraints)
@@ -227,18 +227,18 @@ bool sp_tableau_init_constraints_rows(SPTableau *spt) {
                 break;
             case GE:
                 if (spt->lp_def->objective_function->type == MAXIMIZE) {
-                    spt->big_M[artificial_start_col + artificial_index] = -1;  
+                    spt->big_M[artificial_start_col + artificial_index] = 1;  
                 } else if (spt->lp_def->objective_function->type == MINIMIZE) {
-                    spt->big_M[artificial_start_col + artificial_index] = 1;    
+                    spt->big_M[artificial_start_col + artificial_index] = -1;    
                 }
-                spt->tableau[1 + i][excess_start_col + surplus_index++] = -1.0;
+                spt->tableau[1 + i][excess_start_col + excess_index++] = -1.0;
                 spt->tableau[1 + i][artificial_start_col + artificial_index++] = 1.0;
                 break;
             case EQ:
                 if (spt->lp_def->objective_function->type == MAXIMIZE) {
-                    spt->big_M[artificial_start_col + artificial_index] = -1;   
+                    spt->big_M[artificial_start_col + artificial_index] = 1;   
                 } else if (spt->lp_def->objective_function->type == MINIMIZE) {
-                    spt->big_M[artificial_start_col + artificial_index] = 1;    
+                    spt->big_M[artificial_start_col + artificial_index] = -1;    
                 }
                 spt->tableau[1 + i][artificial_start_col + artificial_index++] = 1.0;
                 break;
