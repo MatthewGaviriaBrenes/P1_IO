@@ -1,4 +1,4 @@
-# Simplex Solver v1
+# Simplex Solver v2
 
 A simple program to resolve Linear Programming issues using the Simplex algorithm with tableaus.
 
@@ -12,21 +12,23 @@ GTK-based Graphics User Interface (GUI) that receives the following information 
 - Definitions for each constraint
 
 ## Program Features
-- Resolves maximize and minimize LP problems using the Simplex algorithm and tableaus. As of this version of the program, it will solve issues with less-than-equal (<=) constraints.
-- Detection of multiple solutions: Calculate a second solution, results from both solutions are used to set up equation to calculate other solutions in-between.
+- Resolves maximize and minimize LP problems using the Simplex algorithm with the tableau approach.
+- Handles LP constraint definitions using ≤, ≥ and = operations.
+- Detection of multiple solutions: Calculate a second solution. Both solutions are used to calculate solutions between them using the proper 
 - Detection of unbounded problem: Stops execution and reports situation to the user.
 - Detection of degenerated problem: Reports degeneration, provide details on degeneration and ratio tie-breaking. 
+- Detection of infeasible problem: Reports whether a problem is infeasible if a basic feasible solution (BFS) cannot be reached.
 - Show tableaus for each step (if requested by user).
 
 ## Output of results
 The program outputs the results in a LaTeX file and a PDF file (compiled from the LaTeX file). Additional metadata about the execution is included:
 - Cover page.
 - About Simplex algorithm: History, properties, etc.
-- Original problem: Name given by user, mathematical model (objective function and constraints using user-given variable names).
+- Original problem: Name given by user, mathematical model (objective function and constraints with user-provided names for decision variables).
 - Initial Simplex tableau.
 - Middle tableaus (if requested by user).
 - Final tableau and description of final state (e.g. Optimal solution found, unbounded problem, etc.)
-- Solution details, including explanations for special cases (multiple solutions, degenerated problems, unbounded problems.)
+- Solution details, including explanations for special cases (multiple solutions, degenerated problems, unbounded problems, infeasible problems.)
 
 ## Language
 
@@ -65,5 +67,3 @@ Use GNU Make to build the project using the project's Makefile:
 5. Specify the coefficient of each decision variable in each constraint, alongside their operations (≤, ≥, =) and bound value (RHS | right-hand-side).
 6. Click the checkmark labeled "Include middle tableaus in report" to display the Simplex tableau on each step of the solution. Otherwise, leave it unchecked to only show the starting and final tableaus.
 7. The program will generate a report document in LaTeX and PDF formats named "informe_simplex". The PDF file is opened using evince in presentation mode.
-
-NOTE: This version of the program only supports constraints using the ≤ operation.
