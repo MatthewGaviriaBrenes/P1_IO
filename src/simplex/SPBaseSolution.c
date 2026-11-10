@@ -119,7 +119,7 @@ size_t sp_base_solution_get_num_base_vars(const SPBaseSolution *spbs) {
 }
 
 // Check if the specified variable (by tableau index) is in the BS.
-bool sp_base_solution_is_vars_in_base(const SPBaseSolution *spbs, size_t var_index) {
+bool sp_base_solution_is_var_in_base(const SPBaseSolution *spbs, size_t var_index) {
     if (spbs == NULL) {
         //printf("Error: Base Solution struct is NULL.\n");
         return false;
