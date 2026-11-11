@@ -40,7 +40,7 @@ enum SPBFSValidation {
 typedef struct {
     LPDefinition *lp_def;   // Pointer to the definition of the linear programming problem (LPDefinition struct) for the Simplex Tableau.
     double **tableau;       // 2D array representing the Simplex tableau. Will be initialized by constructor funciton.
-    double *big_M;          // Array to hold the Big M coefficients for the tableau's objective function row.
+    double *big_M;          // Array to hold the Big M coefficients for the tableau's objective row.
 
     size_t num_rows;  // Number of rows in the tableau
     size_t num_cols;  // Number of columns in the tableau
@@ -71,7 +71,7 @@ void sp_tableau_free(SPTableau *spt);
 // Returns boolean to confirm successful initialization.
 bool sp_tableau_init_baseline(SPTableau *spt);
 
-// Helper initialization function: Set up the tableau's objective function row based on the LP definition's objective function.
+// Helper initialization function: Set up the tableau's objective row based on the LP definition's objective function.
 // Returns boolean to confirm successful initialization.
 // Must be called after sp_tableau_init_baseline.
 bool sp_tableau_init_objective_func_row(SPTableau *spt);
@@ -82,7 +82,7 @@ bool sp_tableau_init_objective_func_row(SPTableau *spt);
 bool sp_tableau_init_big_M_row(SPTableau *spt);
 
 // Helper function to add the constraints rows to the tableau. This function is called during the initialization of the tableau.
-// Will populate big M row with the coefficients of the artificial variables in the objective function row.
+// Will populate big M row with the coefficients of the artificial variables in the objective row.
 // Must be called after sp_tableau_init_baseline.
 bool sp_tableau_init_constraints_rows(SPTableau *spt);
 

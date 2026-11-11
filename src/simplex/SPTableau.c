@@ -134,7 +134,7 @@ bool sp_tableau_init_baseline(SPTableau *spt) {
     return true;
 }
 
-// Helper initialization function: Set up the tableau's objective function row based on the LP definition's objective function.
+// Helper initialization function: Set up the tableau's objective row based on the LP definition's objective function.
 // Must be called after sp_tableau_init_baseline.
 bool sp_tableau_init_objective_func_row(SPTableau *spt) {
     if (spt == NULL ||  spt->lp_def == NULL ||
@@ -144,11 +144,11 @@ bool sp_tableau_init_objective_func_row(SPTableau *spt) {
         return false;
     }
 
-    // Initialize the objective function row (row 0) in the tableau
+    // Initialize the objective row (row 0) in the tableau
     // The first column (col. 0) is for the Z value, which is initialized to 1.
     spt->tableau[0][0] = 1.0; // Z value
 
-    // Fill in the coefficients of the decision variables in the objective function row
+    // Fill in the coefficients of the decision variables in the objective row
     // Objective function's coefficients enter negated into the tableau, regardless of LP scenario (maximization or minimization).
     for (size_t j = 0; j < spt->num_decision_vars; j++) {
         spt->tableau[0][1 + j] =
@@ -164,7 +164,7 @@ bool sp_tableau_init_objective_func_row(SPTableau *spt) {
         spt->tableau[0][j] = 0.0;
     }
 
-    // The last column (RHS value) in the objective function row is also initialized to 0
+    // The last column (RHS value) in the objective row is also initialized to 0
     spt->tableau[0][spt->num_cols - 1] = 0.0;
     return true;
 }
@@ -483,7 +483,7 @@ double sp_tableau_get_base_var_value(const SPTableau *spt, size_t var_index) {
     }
 
     // Find the row corresponding to the base variable and return its value from the RHS column
-    for (size_t i = 1; i < spt->num_rows; i++) { // Start from row 1 to skip the objective function row
+    for (size_t i = 1; i < spt->num_rows; i++) { // Start from row 1 to skip the objective row
         if (spt->tableau[i][var_index] == 1.0) {
             return spt->tableau[i][spt->num_cols - 1]; // Return the value from the RHS column
         }
@@ -497,7 +497,7 @@ double sp_tableau_get_z_value(const SPTableau *spt) {
         //printf("Error: Tableau or its data is NULL.\n");
         return 0.0; // Return 0.0 as a default value in case of error
     }
-    return spt->tableau[0][spt->num_cols - 1]; // Return the value of Z from the last column of the objective function row
+    return spt->tableau[0][spt->num_cols - 1]; // Return the value of Z from the last column of the objective row
 }
 
 // Get the next variable entering the basis (pivot column) based on the current tableau state.
@@ -536,7 +536,7 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
             }
         }
 
-        // Maximization: Look for the most negative coefficient in the objective function row (row 0), including big M coefficients.
+        // Maximization: Look for the most negative coefficient in the objective row (row 0), including big M coefficients.
         else if (spt->lp_def->objective_function->type == MAXIMIZE) {
             if (spt->big_M[col_index] != 0.0) {
                 if (spt->big_M[col_index] < best_big_m) {
@@ -553,7 +553,7 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
             }
         } 
 
-        // Minimization: Look for the most positive coefficient in the objective function row (row 0), including big M coefficients.
+        // Minimization: Look for the most positive coefficient in the objective row (row 0), including big M coefficients.
         else if (spt->lp_def->objective_function->type == MINIMIZE) {
             if (spt->big_M[col_index] != 0.0) {
                 if (spt->big_M[col_index] > best_big_m) {
@@ -594,7 +594,7 @@ double *sp_tableau_calculate_min_ratios(const SPTableau *spt, size_t pivot_col_i
     }
 
     for (size_t row = 0; row < spt->num_rows; row++) {
-        // First row (row 0) is the objective function row, default to ratio -1.0 to skip it.
+        // First row (row 0) is the objective row, default to ratio -1.0 to skip it.
         if (row == 0){
             min_ratios[row] = -1.0;
             continue;
@@ -681,7 +681,6 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
 
 // Canonize the non-pivot rows to ensure that all other entries in the pivot column are zero.
 // Must be called after sp_tableau_canonize_pivot_row. 
-//TODO: Validate logic to handle update of big M coefficients for the objective function row (row 0).
 void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, size_t pivot_col_index) {
     if (spt == NULL || spt->tableau == NULL) {
         //printf("Error: Tableau or its data is NULL.\n");
@@ -702,21 +701,24 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
         if (np_row == pivot_row_index) {
             continue;   
         }
+
         // If pivot column coefficient in non-pivot row is zero, skip the row (already canonized).
+        // Also check if the non-pivot row is the objective row (row 0). If so, check its big M coefficient before skipping it.
         if (spt->tableau[np_row][pivot_col_index] == 0) {
-            // If selected non-pivot row is objective row (row 0), check if it also has a zero big M coefficient before skipping it.
-            if (np_row == 0 && spt->big_M[pivot_col_index] == 0) {
+            if (np_row != 0) {
                 continue;
-            }
-            continue;
+            } else if (np_row == 0 && spt->big_M[pivot_col_index] == 0) {
+                continue;
+            } 
+            // If in objective row and big M coefficient is non-zero, the row needs to be canonized.
         }
 
         // Elimination factor: Get negative of the pivot column value in the non-pivot row to eliminate it (turn it to zero).
-        // Used to canonize the non-pivot rows by adding a scaled version of the pivot row to each non-pivot row.
+        // Used to canonize the non-pivot row by adding a scaled version of the pivot row.
         double eliminiation_factor = -spt->tableau[np_row][pivot_col_index];
 
-        // Big M Elimination factor: Get negative of the big M coefficient for the objective function row (row 0).
-        // If the non-pivot row is the objective function row (row 0), calculate the eliminiation factor for the big M coefficient.
+        // Big M Elimination factor: Get negative of the big M coefficient to canonize the objective row (row 0) if applicable.
+        // Stays at zero if not canonizing row 0 or the big M coefficient is already zero (e.g. Already canonized or no artificial variables).
         double big_M_elimination = 0;
         if (np_row == 0) { 
             big_M_elimination = -spt->big_M[pivot_col_index];
@@ -880,7 +882,7 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
 
     // Step 4.d - Check if the next variable that can enter the base is because there are multiple optimal solutions and the current base is a BFS
     if ((spt->tableau[0][future_pivot_col_index] == 0.0) && (bfs_check == SPBS_VALID_BFS)) {
-        //printf("Multiple solutions detected. Non-base variable has coefficient zero in the objective function row.\n");
+        //printf("Multiple solutions detected. Non-base variable has coefficient zero in the objective row.\n");
         free(spbs);
         return SPT_MULTPILE_SOLUTIONS_DETECTED; 
     } 
