@@ -4,7 +4,7 @@
 
 // Create base solution entry with a given number of decision and slack variables. Returns a pointer to the created SPBaseSolution struct.
 // Includes Z value as part of the BS (index 0, iniialized as 0.0).
-SPBaseSolution *sp_base_solution_create(size_t num_decision_vars, size_t num_slack_vars) {
+SPBaseSolution *sp_base_solution_create(size_t num_decision_vars, size_t num_slack_vars, size_t num_excess_vars, size_t num_artificial_vars) {
     if (num_decision_vars == 0) {
         //printf("Error: Cannot create BS with zero decision and slack variables.\n");
         return NULL;
@@ -17,9 +17,11 @@ SPBaseSolution *sp_base_solution_create(size_t num_decision_vars, size_t num_sla
 
     spbs->num_decision_vars = num_decision_vars;
     spbs->num_slack_vars = num_slack_vars;
+    spbs->num_excess_vars = num_excess_vars;
+    spbs->num_artificial_vars = num_artificial_vars;
 
     // Number of variables in the BS: 1 (Z column) + number of decision variables + number of slack variables
-    size_t spbs_total_vars = 1 + spbs->num_decision_vars + spbs->num_slack_vars; // Z column + decision vars + slack vars
+    size_t spbs_total_vars = 1 + spbs->num_decision_vars + spbs->num_slack_vars + spbs->num_excess_vars + spbs->num_artificial_vars;
 
     // Allocate memory for the arrays to hold the BS information (Z, decision vars, slack vars)
     spbs->vars_in_base = (bool *)malloc(spbs_total_vars * sizeof(bool));
@@ -70,21 +72,22 @@ size_t sp_base_solution_get_num_slack_vars(const SPBaseSolution *spbs) {
     return spbs->num_slack_vars;
 }
 
-// Get the number of variables in the BaseSolution struct that are in the base.
-// Uses the var_in_base array (bool) to count the number of variables that are marked as being in the base.
-size_t sp_base_solution_get_num_base_vars(const SPBaseSolution *spbs) {
+// Get the number of excess variables in the BS.
+size_t sp_base_solution_get_num_excess_vars(const SPBaseSolution *spbs) {
     if (spbs == NULL) {
         //printf("Error: Base Solution struct is NULL.\n");
         return 0;
     }
-    size_t count = 0;
-    size_t num_vars = 1 + spbs->num_decision_vars + spbs->num_slack_vars; // Total variables in BS definition: Z + decision vars + slack vars
-    for (size_t i = 0; i < num_vars; i++) {
-        if (spbs->vars_in_base[i]) {
-            count++;
-        }
+    return spbs->num_excess_vars;
+}
+
+// Get the number of artificial variables in the BS.
+size_t sp_base_solution_get_num_artificial_vars(const SPBaseSolution *spbs) {
+    if (spbs == NULL) {
+        //printf("Error: Base Solution struct is NULL.\n");
+        return 0;
     }
-    return count;
+    return spbs->num_artificial_vars;
 }
 
 // Get the total number of variables in the SPBaseSolution struct (Z + decision vars + slack vars).
@@ -95,11 +98,28 @@ size_t sp_base_solution_get_num_vars(const SPBaseSolution *spbs) {
         return 0;
     }
     // Total variables in BS: Z + decision vars + slack vars
-    return 1 + spbs->num_decision_vars + spbs->num_slack_vars;
+    return 1 + spbs->num_decision_vars + spbs->num_slack_vars + spbs->num_excess_vars + spbs->num_artificial_vars;
+}
+
+// Get the number of variables in the BaseSolution struct that are in the base.
+// Uses the var_in_base array (bool) to count the number of variables that are marked as being in the base.
+size_t sp_base_solution_get_num_base_vars(const SPBaseSolution *spbs) {
+    if (spbs == NULL) {
+        //printf("Error: Base Solution struct is NULL.\n");
+        return 0;
+    }
+    size_t count = 0;
+    size_t num_vars = sp_base_solution_get_num_vars(spbs); // Total variables in BS definition: Z + decision vars + slack vars
+    for (size_t i = 0; i < num_vars; i++) {
+        if (spbs->vars_in_base[i]) {
+            count++;
+        }
+    }
+    return count;
 }
 
 // Check if the specified variable (by tableau index) is in the BS.
-bool sp_base_solution_is_vars_in_base(const SPBaseSolution *spbs, size_t var_index) {
+bool sp_base_solution_is_var_in_base(const SPBaseSolution *spbs, size_t var_index) {
     if (spbs == NULL) {
         //printf("Error: Base Solution struct is NULL.\n");
         return false;

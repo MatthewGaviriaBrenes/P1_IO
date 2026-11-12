@@ -48,11 +48,9 @@ void presentation_preamble(FILE *file)
     fprintf(file, "\\usepackage{graphicx}\n");
     fprintf(file, "\\usepackage[table]{xcolor}\n");
     fprintf(file, "\\usepackage[expansion=false]{microtype}\n\n");
-
-    fprintf(file, "\\title{Project 01 - Simplex}\n");
+    fprintf(file, "\\title{Project 02 - Simplex Solver v2}\n");
     fprintf(file, "\\author{Matthew Gaviria Brenes - 2023179864 \\\\\n Esteban Fonseca Montoya - 201028937 \\\\\n Josué Meza Solano - 2024240640}\n");
     fprintf(file, "\\date{\\today}\n\n");
-
     fprintf(file, "\\begin{document}\n\n");
 }
 
@@ -60,8 +58,12 @@ void presentation_preamble(FILE *file)
  
 void presentation_cover(FILE *file)
 {
+    fprintf(file, "\\begin{figure}");
+    fprintf(file, "\\centering\n");
+    fprintf(file, "\\includegraphics[width=\\linewidth]{src/tex/logo-tec.png}\n");
+    fprintf(file, "\\end{figure}\n");
     fprintf(file, "\\maketitle\n");
-    fprintf(file, "\\thispagestyle{empty}\n");
+    fprintf(file, "\\clearpage\n\n");
 }
 
 void presentation_simplex_slide(FILE *file)
@@ -156,12 +158,16 @@ void presentation_tableau(FILE *file,
                 tableau->lp_def->decision_variables->names [col -1] != NULL) {
                     fputs("\\text{\\texttt{", file);
 
-                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 4) {
-                        char truncated_name[5] = {0};
-                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 4);
-                        presentation_tex_text(file, truncated_name);
+                    // Truncate variable name to 8 characters if longer
+                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 8) {
+                        char truncated_name[8] = {0};
+                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 8);
+                        fputs(truncated_name, file);
+                        //presentation_tex_text(file, truncated_name);
                     } else {
-                        presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
+                        // Parse given variable name without escaping TeX special characters.
+                        fputs(tableau->lp_def->decision_variables->names[col - 1], file);
+                        //presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
                     }
                     fputs("}}", file);
                 } else {
@@ -173,7 +179,7 @@ void presentation_tableau(FILE *file,
             fprintf(file, "$S_{%zu}$", col - tableau->num_decision_vars);
         } else if (col <= tableau->num_decision_vars +
                           tableau->num_slack_vars +
-                          tableau->num_surplus_vars) {
+                          tableau->num_excess_vars) {
             fprintf(file, "$E_{%zu}$",
                     col - tableau->num_decision_vars -
                     tableau->num_slack_vars);
@@ -181,7 +187,7 @@ void presentation_tableau(FILE *file,
             fprintf(file, "$A_{%zu}$",
                     col - tableau->num_decision_vars -
                     tableau->num_slack_vars -
-                    tableau->num_surplus_vars);
+                    tableau->num_excess_vars);
         }
     }
 
@@ -192,7 +198,7 @@ void presentation_tableau(FILE *file,
         if (row == 0) {
             fprintf(file, "$Z$");
         } else {
-            fprintf(file, "$R_{%zu}$", row);
+            fprintf(file, "$C_{%zu}$", row);
         }
 
         for (size_t col = 0; col < tableau->num_cols; ++col) {
@@ -250,12 +256,16 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
                 tableau->lp_def->decision_variables->names [col -1] != NULL) {
                     fputs("\\text{\\texttt{", file);
 
-                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 4) {
-                        char truncated_name[5] = {0};
-                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 4);
-                        presentation_tex_text(file, truncated_name);
+                    // Truncate variable name to 8 characters if longer
+                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 8) {
+                        char truncated_name[8] = {0};
+                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 8);
+                        fputs(truncated_name, file);
+                        //presentation_tex_text(file, truncated_name);
                     } else {
-                        presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
+                        // Parse given variable name without escaping TeX special characters.
+                        fputs(tableau->lp_def->decision_variables->names[col - 1], file);
+                        //presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
                     }
                     fputs("}}", file);
                 } else {
@@ -265,11 +275,11 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
         } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars) {
             fprintf(file, "$S_{%zu}$", col - tableau->num_decision_vars);
         
-        } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars + tableau->num_surplus_vars) {
+        } else if (col <= tableau->num_decision_vars + tableau->num_slack_vars + tableau->num_excess_vars) {
             fprintf(file, "$E_{%zu}$", col - tableau->num_decision_vars - tableau->num_slack_vars);
         
         } else {
-            fprintf(file, "$A_{%zu}$", col - tableau->num_decision_vars - tableau->num_slack_vars - tableau->num_surplus_vars);
+            fprintf(file, "$A_{%zu}$", col - tableau->num_decision_vars - tableau->num_slack_vars - tableau->num_excess_vars);
         
         }
     }
@@ -281,7 +291,7 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
         if (row == 0) {
             fprintf(file, "$Z$");
         } else {
-            fprintf(file, "$R_{%zu}$", row);
+            fprintf(file, "$C_{%zu}$", row);
         }
 
         for (size_t col = 0; col < tableau->num_cols; ++col) {
@@ -326,7 +336,7 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
             if (selected_ratio == 0.0) {
                 fprintf(file,
                     "\\par\\textbf{Degeneracy:} the minimum ratio is zero "
-                    "in row $R_{%zu}$. The pivot changes the basis, but "
+                    "in row $C_{%zu}$. The pivot changes the basis, but "
                     "does not improve the objective value in this iteration.\\par\n", pivot_row);
             }
             if (tied_rows > 1) {
@@ -352,7 +362,9 @@ static void presentation_print_variable(FILE *file,
 
     if (name != NULL && name[0] != '\0') {
         fputs("\\text{\\texttt{", file);
-        presentation_tex_text(file, name);
+        
+        fputs(name, file);       // Enter variable name as-is (including TeX special chars). 
+        //presentation_tex_text(file, name);
         fputs("}}", file);
     } else {
         fprintf(file, "x_{%zu}", index + 1);

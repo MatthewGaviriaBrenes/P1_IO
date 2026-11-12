@@ -61,8 +61,10 @@ SPBaseSolution* sp_multi_solutions_calculate_midpoint(const SPMultiSolutions *mu
 
     size_t num_decision_vars = multi_solutions->bfs_a->num_decision_vars;
     size_t num_slack_vars = multi_solutions->bfs_a->num_slack_vars;
+    size_t num_excess_vars = multi_solutions->bfs_a->num_excess_vars;
+    size_t num_artificial_vars = multi_solutions->bfs_a->num_artificial_vars;
 
-    SPBaseSolution *midpoint_bfs = sp_base_solution_create(num_decision_vars, num_slack_vars);
+    SPBaseSolution *midpoint_bfs = sp_base_solution_create(num_decision_vars, num_slack_vars, num_excess_vars, num_artificial_vars);
     if (midpoint_bfs == NULL) {
         //printf("Error: Memory allocation failed for midpoint BFS.\n");
         return NULL; // Memory allocation failed
@@ -72,8 +74,7 @@ SPBaseSolution* sp_multi_solutions_calculate_midpoint(const SPMultiSolutions *mu
     midpoint_bfs->var_values[0] = multi_solutions->bfs_a->var_values[0];
     midpoint_bfs->vars_in_base[0] = multi_solutions->bfs_a->vars_in_base[0];
 
-    size_t num_vars = 1 + num_decision_vars + num_slack_vars; // Total variables in BFS: Z + decision vars + slack vars
-
+    size_t num_vars = 1 + num_decision_vars + num_slack_vars + num_excess_vars + num_artificial_vars;
 
     // Calculate the midpoint values between the two BFS for decision and slack variables.
     for (size_t var = 1; var < num_vars; var++) {

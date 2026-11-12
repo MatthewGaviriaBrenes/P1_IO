@@ -18,20 +18,29 @@ extern const size_t SPT_DEGENERATION_THRESHOLD;
 // Used to indicate the current state of the tableau and the solution.
 enum SPTableauStatus {
     SPT_STANDBY = 0,                        // Optimal solution has not been found yet. The tableau is still being processed.
-    SPT_OPTIMAL_SOLUTION_FOUND = 1,         // Unique optimal solution found. The tableau has reached an optimal state.
-    SPT_MULTPILE_SOLUTIONS_DETECTED = 2,    // Problem has multiple optimal solutions (run additional steps to find them).
-    SPT_DEGENERATED_PROBLEM = 3,            // Degenerate problem detected.
-    SPT_UNBOUNDED_PROBLEM = 4,              // Unbounded problem detected.
-    SPT_DEGENERATED_LOOP = 5,               // Problem is stuck in a degenerate infinte loop and cannot be resolved.
-    SPT_INFEASIBLE_PROBLEM = 6,             // Infeasible problem detected [for v2].
-    SPT_INVALID_STATE = 7                   // Invalid problem detected (for other errors).
+    SPT_INVALID_STATE = 1,                  // Invalid problem detected (for other errors).
+    SPT_TSP_STEP_ZERO_DONE = 2,             // Two-step method's step 0 done and tableau is ready for normal solve steps.
+    SPT_OPTIMAL_SOLUTION_FOUND = 3,         // Unique optimal solution found. The tableau has reached an optimal state.
+    SPT_MULTPILE_SOLUTIONS_DETECTED = 4,    // Problem has multiple optimal solutions (run additional steps to find them).
+    SPT_DEGENERATED_PROBLEM = 5,            // Degenerate problem detected.
+    SPT_UNBOUNDED_PROBLEM = 6,              // Unbounded problem detected.
+    SPT_DEGENERATED_LOOP = 7,               // Problem is stuck in a degenerate infinte loop and cannot be resolved.
+    SPT_INFEASIBLE_PROBLEM = 8,             // Infeasible problem detected.
 };
 
+// Enum to output status of validating a given base solution as a BFS for a given SPTableau.
+enum SPBFSValidation {
+    SPBS_VALID_BFS = 0,              // Base is valid and feasible.
+    SPBS_ERROR = 1,                  // Cannot validate base due to errors (e.g. NULL pointers, mismatching dimensions.)
+    SPBS_INFEASIBLE = 2,             // Base is infeasible (does not satisfy all constraints or has non-zero artificial variables).
+    SPBS_DEGENERATE = 3              // Base is degenerate (has one or more basic variables with value zero).
+};
 
 // Struct for Simplex Tableau (SPTableau) information.
 typedef struct {
-    LPDefinition *lp_def; // Pointer to the definition of the linear programming problem (LPDefinition struct) for the Simplex Tableau.
-    double **tableau; // 2D array representing the Simplex tableau. Will be initialized by constructor funciton.
+    LPDefinition *lp_def;   // Pointer to the definition of the linear programming problem (LPDefinition struct) for the Simplex Tableau.
+    double **tableau;       // 2D array representing the Simplex tableau. Will be initialized by constructor funciton.
+    double *big_M;          // Array to hold the Big M coefficients for the tableau's objective row.
 
     size_t num_rows;  // Number of rows in the tableau
     size_t num_cols;  // Number of columns in the tableau
@@ -40,8 +49,12 @@ typedef struct {
     size_t num_decision_vars; 
     size_t num_constraints;   
     size_t num_slack_vars;      
-    size_t num_surplus_vars;     // for v2
+    size_t num_excess_vars;     // for v2
     size_t num_artificial_vars; // for v2
+
+    // Flag to indicate if the tableau is using the two-step method (for problems with artificial variables).
+    // Will switch to false after the first step is completed (if applicable).
+    bool two_step_method; 
 
     // Additional fields for tracking the state of the tableau
     size_t degeneration_level;  // If problem is degenerated, counts steps the tableau stays degenerated. May be used to handle potential cycling. Defaults to 0.
@@ -50,22 +63,28 @@ typedef struct {
 // Create the tableaul for the given LPDefinition struct. Returns a pointer to the created SPTableau struct.
 SPTableau *sp_tableau_create(LPDefinition *lp_def);
 
+// Free the memory allocated for the SPTableau struct and its associated resources.
+// Caller must ensure that the LPDefinition struct is freed separately if it was dynamically allocated.
+void sp_tableau_free(SPTableau *spt);
+
 // Helper initialization function: Create the baseline tableau given the LP definition's baseline information.
 // Returns boolean to confirm successful initialization.
 bool sp_tableau_init_baseline(SPTableau *spt);
 
-// Helper initialization function: Set up the tableau's objective function row based on the LP definition's objective function.
+// Helper initialization function: Set up the tableau's objective row based on the LP definition's objective function.
 // Returns boolean to confirm successful initialization.
 // Must be called after sp_tableau_init_baseline.
 bool sp_tableau_init_objective_func_row(SPTableau *spt);
 
+// Helper initialization function: Initialize the Big M row in the tableau`
+// Returns boolean to confirm successful initialization.
+// Must be called after sp_tableau_init_objective_func_row.
+bool sp_tableau_init_big_M_row(SPTableau *spt);
+
 // Helper function to add the constraints rows to the tableau. This function is called during the initialization of the tableau.
+// Will populate big M row with the coefficients of the artificial variables in the objective row.
 // Must be called after sp_tableau_init_baseline.
 bool sp_tableau_init_constraints_rows(SPTableau *spt);
-
-// Free the memory allocated for the SPTableau struct and its associated resources.
-// Caller must ensure that the LPDefinition struct is freed separately if it was dynamically allocated.
-void sp_tableau_free(SPTableau *spt);
 
 // Get the current base solution for the tableau. 
 // Returns a pointer to the SPBaseSolution struct representing the current BFS.
@@ -73,14 +92,18 @@ void sp_tableau_free(SPTableau *spt);
 SPBaseSolution *sp_tableau_get_base_sol(const SPTableau *spt);
 
 // Validate a provided Base solution against the tableau's constraints to confirm if it is a BFS (Bease Feasible Solution).
-// A valid BFS must satisfy all constraints of the tableau.
-// Does not confirm optimal solution.
-bool sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs);
+// Does not confirm whether the base solution is optimal.
+enum SPBFSValidation sp_tableau_validate_base(const SPTableau *spt, const SPBaseSolution *spbs);
 
 // Returns a snapshot of the tableau's current state as a 2D array of doubles.
 // To be used if intermediate tableau states need to be displayed.
 // Caller is responsible for freeing the memory allocated for the snapshot after use.
 double **sp_tableau_take_snapshot(const SPTableau *spt);
+
+// Returns a snapshot of the tableau's big M quotients as an array of doubles.
+// To be used if intermediate tableau states need to be displayed.
+// Caller is responsible for freeing the memory allocated for the snapshot after use.
+double *sp_tableau_take_big_M_snapshot(const SPTableau *spt);
 
 // Check if the specified column in the tableau is a base column (i.e., corresponds to a basic variable).
 // Returns true if the column is a base column, false otherwise.
@@ -129,6 +152,10 @@ void sp_tableau_canonize_pivot_row(SPTableau *spt, size_t pivot_row_index, size_
 // Canonize the non-pivot rows to ensure that all other entries in the pivot column are zero.
 // Must be called after sp_tableau_canonize_pivot_row. 
 void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, size_t pivot_col_index);
+
+// Run the first step of the two-step method to normalize a Simplex tableau with artificial variables.
+// To be called only if the tableau is using the two-step method (see bool flag).
+enum SPTableauStatus sp_tableau_solve_step_zero(SPTableau *spt);
 
 // Perform a single step of the simplex algorithm on the tableau.
 enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt);
