@@ -158,12 +158,16 @@ void presentation_tableau(FILE *file,
                 tableau->lp_def->decision_variables->names [col -1] != NULL) {
                     fputs("\\text{\\texttt{", file);
 
-                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 4) {
-                        char truncated_name[5] = {0};
-                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 4);
-                        presentation_tex_text(file, truncated_name);
+                    // Truncate variable name to 8 characters if longer
+                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 8) {
+                        char truncated_name[8] = {0};
+                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 8);
+                        fputs(truncated_name, file);
+                        //presentation_tex_text(file, truncated_name);
                     } else {
-                        presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
+                        // Parse given variable name without escaping TeX special characters.
+                        fputs(tableau->lp_def->decision_variables->names[col - 1], file);
+                        //presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
                     }
                     fputs("}}", file);
                 } else {
@@ -194,7 +198,7 @@ void presentation_tableau(FILE *file,
         if (row == 0) {
             fprintf(file, "$Z$");
         } else {
-            fprintf(file, "$R_{%zu}$", row);
+            fprintf(file, "$C_{%zu}$", row);
         }
 
         for (size_t col = 0; col < tableau->num_cols; ++col) {
@@ -252,12 +256,16 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
                 tableau->lp_def->decision_variables->names [col -1] != NULL) {
                     fputs("\\text{\\texttt{", file);
 
-                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 4) {
-                        char truncated_name[5] = {0};
-                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 4);
-                        presentation_tex_text(file, truncated_name);
+                    // Truncate variable name to 8 characters if longer
+                    if (strlen(tableau->lp_def->decision_variables->names[col - 1]) > 8) {
+                        char truncated_name[8] = {0};
+                        strncpy(truncated_name, tableau->lp_def->decision_variables->names[col - 1], 8);
+                        fputs(truncated_name, file);
+                        //presentation_tex_text(file, truncated_name);
                     } else {
-                        presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
+                        // Parse given variable name without escaping TeX special characters.
+                        fputs(tableau->lp_def->decision_variables->names[col - 1], file);
+                        //presentation_tex_text(file, tableau->lp_def->decision_variables->names[col - 1]);
                     }
                     fputs("}}", file);
                 } else {
@@ -283,7 +291,7 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
         if (row == 0) {
             fprintf(file, "$Z$");
         } else {
-            fprintf(file, "$R_{%zu}$", row);
+            fprintf(file, "$C_{%zu}$", row);
         }
 
         for (size_t col = 0; col < tableau->num_cols; ++col) {
@@ -328,7 +336,7 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
             if (selected_ratio == 0.0) {
                 fprintf(file,
                     "\\par\\textbf{Degeneracy:} the minimum ratio is zero "
-                    "in row $R_{%zu}$. The pivot changes the basis, but "
+                    "in row $C_{%zu}$. The pivot changes the basis, but "
                     "does not improve the objective value in this iteration.\\par\n", pivot_row);
             }
             if (tied_rows > 1) {
@@ -354,7 +362,9 @@ static void presentation_print_variable(FILE *file,
 
     if (name != NULL && name[0] != '\0') {
         fputs("\\text{\\texttt{", file);
-        presentation_tex_text(file, name);
+        
+        fputs(name, file);       // Enter variable name as-is (including TeX special chars). 
+        //presentation_tex_text(file, name);
         fputs("}}", file);
     } else {
         fprintf(file, "x_{%zu}", index + 1);
