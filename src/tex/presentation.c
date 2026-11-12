@@ -48,11 +48,9 @@ void presentation_preamble(FILE *file)
     fprintf(file, "\\usepackage{graphicx}\n");
     fprintf(file, "\\usepackage[table]{xcolor}\n");
     fprintf(file, "\\usepackage[expansion=false]{microtype}\n\n");
-
-    fprintf(file, "\\title{Project 01 - Simplex}\n");
+    fprintf(file, "\\title{Project 02 - Simplex Solver v2}\n");
     fprintf(file, "\\author{Matthew Gaviria Brenes - 2023179864 \\\\\n Esteban Fonseca Montoya - 201028937 \\\\\n Josué Meza Solano - 2024240640}\n");
     fprintf(file, "\\date{\\today}\n\n");
-
     fprintf(file, "\\begin{document}\n\n");
 }
 
@@ -60,8 +58,12 @@ void presentation_preamble(FILE *file)
  
 void presentation_cover(FILE *file)
 {
+    fprintf(file, "\\begin{figure}");
+    fprintf(file, "\\centering\n");
+    fprintf(file, "\\includegraphics[width=\\linewidth]{src/tex/logo-tec.png}\n");
+    fprintf(file, "\\end{figure}\n");
     fprintf(file, "\\maketitle\n");
-    fprintf(file, "\\thispagestyle{empty}\n");
+    fprintf(file, "\\clearpage\n\n");
 }
 
 void presentation_simplex_slide(FILE *file)
