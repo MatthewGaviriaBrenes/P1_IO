@@ -16,7 +16,7 @@ GTK-based Graphics User Interface (GUI) that receives the following information 
 - Handles LP constraint definitions using ≤, ≥ and = operations.
 - Detection of multiple solutions: Calculate a second solution. Both solutions are used to calculate solutions between them using the proper 
 - Detection of unbounded problem: Stops execution and reports situation to the user.
-- Detection of degenerated problem: Reports degeneration, provide details on degeneration and ratio tie-breaking. 
+- Detection of degenerated problem: Reports degeneracy, provide details on degeneracy and ratio tie-breaking. 
 - Detection of infeasible problem: Reports whether a problem is infeasible if a basic feasible solution (BFS) cannot be reached.
 - Show tableaus for each step (if requested by user).
 

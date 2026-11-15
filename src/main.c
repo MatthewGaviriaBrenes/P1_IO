@@ -257,7 +257,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      const TableauSnapshot *initial_snapshot,
                                      const TableauStepSnapshot *history,
                                      size_t history_count,
-                                     size_t degeneration_level,
+                                     size_t degeneracy_level,
                                      const TableauSnapshot *first_multiple_tableau,
                                      const SPMultiSolutions *multiple_solutions) {
     const char *tex_path = "informe_simplex.tex";
@@ -345,9 +345,9 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                "minimum ratio and resets after a positive minimum ratio; "
                "therefore, it reports the current consecutive streak, not "
                "the cumulative number of degenerate pivots.\\par\n",
-            degeneration_level, SPT_DEGENERATION_THRESHOLD);
+            degeneracy_level, SPT_DEGENERATION_THRESHOLD);
         if (final_status == SPT_DEGENERATED_LOOP) {
-        fprintf(f, "The solver stopped after reaching the degeneration "
+        fprintf(f, "The solver stopped after reaching the degeneracy "
                "threshold; an optimal solution was not confirmed.\\par\n");
         }
 
@@ -583,7 +583,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     gboolean pdf_ok = write_report_and_pdf(lp, spt, problem_name, result_message,
                                            include_intermediate, steps, result,
                                            &initial_snapshot, history, history_count,
-                                           spt->degeneration_level,
+                                           spt->degeneracy_level,
                                            &first_multiple_tableau,
                                            multiple_solutions);
     gchar *summary = g_strdup_printf("%s Steps: %zu. %s",
@@ -625,6 +625,10 @@ static gboolean load_builder_file(GtkBuilder *builder, GError **error) {
 }
 
 int main(int argc, char **argv) {
+
+    // Set random seed to system date and time for pseudo-random choice for tie-breaking
+    srand((unsigned int)time(NULL));
+
     gtk_init(&argc, &argv);
     memset(&app, 0, sizeof(app));
     app.builder = gtk_builder_new();

@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Threshold for degeneration level to prevent infinite loops in the Simplex algorithm.
+// Threshold for degeneracy level to prevent infinite loops in the Simplex algorithm.
 extern const size_t SPT_DEGENERATION_THRESHOLD; 
 
 // Enum to output status of the Simplex Tableau after solving steps. 
@@ -57,7 +57,7 @@ typedef struct {
     bool two_step_method; 
 
     // Additional fields for tracking the state of the tableau
-    size_t degeneration_level;  // If problem is degenerated, counts steps the tableau stays degenerated. May be used to handle potential cycling. Defaults to 0.
+    size_t degeneracy_level;  // If problem is degenerated, counts steps the tableau stays degenerated. May be used to handle potential cycling. Defaults to 0.
 } SPTableau;
 
 // Create the tableaul for the given LPDefinition struct. Returns a pointer to the created SPTableau struct.

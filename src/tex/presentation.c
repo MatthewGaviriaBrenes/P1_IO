@@ -341,9 +341,8 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
             }
             if (tied_rows > 1) {
                 fprintf(file,
-                    "\\par\\textbf{Tie:} %zu rows share the minimum ratio. "
-                    "The row with the smallest positive coefficient in the pivot column is selected; "
-                    "if the tie persists, the first row found is kept.\\par\n", tied_rows);
+                    "\\par\\textbf{Degeneracy:} %zu rows share the minimum ratio. "
+                    "$n-1$ binary random selections are done for $n$ tied rows to select the exiting variable.\\par\n", tied_rows);
             }
         
     }

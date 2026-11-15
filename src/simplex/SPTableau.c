@@ -3,7 +3,7 @@
 #include "SPTableau.h"
 #include <math.h>
 
-// Threshold for degeneration level to prevent infinite loops in the simplex algorithm.
+// Threshold for degeneracy level to prevent infinite loops in the simplex algorithm.
 const size_t SPT_DEGENERATION_THRESHOLD = 10; 
 
 // Feasibility tolerance for checking if a solution satisfies the constraints of the LP problem.
@@ -30,7 +30,7 @@ SPTableau *sp_tableau_create(LPDefinition *lp_def) {
     spt->num_rows = spt->num_cols = 0;
     spt->num_decision_vars = spt->num_constraints = 0;
     spt->num_slack_vars = spt->num_excess_vars = spt->num_artificial_vars = 0;
-    spt->degeneration_level = 0;
+    spt->degeneracy_level = 0;
     spt->two_step_method = false;
 
     // Initialize the tableau and aborth if any step fails.
@@ -638,12 +638,11 @@ size_t sp_tableau_get_pivot_row(const SPTableau *spt, size_t pivot_col_index, do
                 min_ratio = new_ratio;
                 pivot_row_index = row;
             }
-            // If two rows have the same minimum ratio, apply tie-breaking rules to select the pivot row.
-            //TODO: Confirm if this also indicates a degenerate solution.
+            // If two rows have the same minimum ratio, use a random binary selection as tie-breaker.
             if (min_ratio == new_ratio) {
-                double current_row_coeff  = spt->tableau[pivot_row_index][pivot_col_index];
-                double entering_row_coeff  = spt->tableau[row][pivot_col_index];
-                pivot_row_index = (entering_row_coeff < current_row_coeff) ? row : pivot_row_index;
+                if (rand() % 2 == 0) {
+                    pivot_row_index = row;
+                }
             }
         }
     }
@@ -785,9 +784,9 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         return SPT_INVALID_STATE;
     }
 
-    // Do not allow the simplex algorithm to continue if the degeneration level exceeds a threshold to avoid infinite cycling.
-    if (spt->degeneration_level >= SPT_DEGENERATION_THRESHOLD) {
-        //printf("Error: Severe degeneration detected. Problem is stuck in a degenerate state and cannot be resolved.\n");
+    // Do not allow the simplex algorithm to continue if the degeneracy level exceeds a threshold to avoid infinite cycling.
+    if (spt->degeneracy_level >= SPT_DEGENERATION_THRESHOLD) {
+        //printf("Error: Severe degeneracy detected. Problem is stuck in a degenerate state and cannot be resolved.\n");
         return SPT_DEGENERATED_LOOP; 
     }
 
@@ -834,17 +833,25 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         free(min_ratios);
         return SPT_UNBOUNDED_PROBLEM; 
     }
-    
-    // If entering variable has a ratio of zero, the problem is degenerate. Increment degeneration level and continue to next step.
-    // Otherwise, reset degeneration level to zero if not degenerate (or degeneration was mitigated).
-    if (min_ratios[pivot_row_index] == 0.0) {
-        //printf("Warning: Degeneration detected.\n");
-        spt->degeneration_level++;
-    } else {
-        if (spt->degeneration_level > 0) {
-            //printf("Degeneration mitigated. Resetting degeneration level.\n");
+
+    // Check the array of ratios to see if there are multiple rows with the same minimum ratio, which indicates a degenerate solution.
+    size_t minimum_ratio_count = 0;
+    for (size_t row = 1; row < spt->num_rows; row++) {
+        if (min_ratios[row] == min_ratios[pivot_row_index]) {
+            minimum_ratio_count++;
         }
-        spt->degeneration_level = 0;
+    }
+    
+    // If entering variable has a ratio of zero, the problem is degenerate. Increment degeneracy level and continue to next step.
+    // Otherwise, reset degeneracy level to zero if not degenerate (or degeneracy was mitigated).
+    if (min_ratios[pivot_row_index] == 0.0 || minimum_ratio_count > 1) {
+        //printf("Warning: Degeneration detected.\n");
+        spt->degeneracy_level++;
+    } else {
+        if (spt->degeneracy_level > 0) {
+            //printf("Degeneration mitigated. Resetting degeneracy level.\n");
+        }
+        spt->degeneracy_level = 0;
     }
 
     free(min_ratios);
@@ -888,13 +895,13 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     } 
 
     // Step 5 - Check for degeneracy in the tableau
-    if (spt->degeneration_level >= SPT_DEGENERATION_THRESHOLD) {
-        //printf("Error: Severe degeneration detected. Problem is stuck in a degenerate state and cannot be resolved.\n"); 
+    if (spt->degeneracy_level >= SPT_DEGENERATION_THRESHOLD) {
+        //printf("Error: Severe degeneracy detected. Problem is stuck in a degenerate state and cannot be resolved.\n"); 
         free(spbs);
         return SPT_DEGENERATED_LOOP;
     }
-    if (spt->degeneration_level > 0) {
-        //printf("Warning: Current degeneration level: %zu\n", spt->degeneration_level);
+    if (spt->degeneracy_level > 0) {
+        //printf("Warning: Current degeneracy level: %zu\n", spt->degeneracy_level);
         free(spbs);
         return SPT_DEGENERATED_PROBLEM; 
     }
