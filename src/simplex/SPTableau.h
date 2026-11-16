@@ -21,7 +21,7 @@ enum SPTableauStatus {
     SPT_INVALID_STATE = 1,                  // Invalid problem detected (for other errors).
     SPT_TSP_STEP_ZERO_DONE = 2,             // Two-step method's step 0 done and tableau is ready for normal solve steps.
     SPT_OPTIMAL_SOLUTION_FOUND = 3,         // Unique optimal solution found. The tableau has reached an optimal state.
-    SPT_MULTPILE_SOLUTIONS_DETECTED = 4,    // Problem has multiple optimal solutions (run additional steps to find them).
+    SPT_MULTIPLE_SOLUTIONS_DETECTED = 4,    // Problem has multiple optimal solutions (run additional steps to find them).
     SPT_DEGENERATED_PROBLEM = 5,            // Degenerate problem detected.
     SPT_UNBOUNDED_PROBLEM = 6,              // Unbounded problem detected.
     SPT_DEGENERATED_LOOP = 7,               // Problem is stuck in a degenerate infinte loop and cannot be resolved.

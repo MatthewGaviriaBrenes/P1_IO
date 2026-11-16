@@ -33,6 +33,7 @@ typedef struct {
     GtkWidget *var_name_entries[MAX_FIELDS];
     GtkWidget *objective_coeff_entries[MAX_FIELDS];
     GtkWidget *constraint_coeff_entries[MAX_FIELDS][MAX_FIELDS];
+    GtkWidget *constraint_operator_combos[MAX_FIELDS];
     GtkWidget *constraint_rhs_entries[MAX_FIELDS];
     size_t nvars;
     size_t nconstraints;
@@ -101,6 +102,7 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
     memset(app.var_name_entries, 0, sizeof(app.var_name_entries));
     memset(app.objective_coeff_entries, 0, sizeof(app.objective_coeff_entries));
     memset(app.constraint_coeff_entries, 0, sizeof(app.constraint_coeff_entries));
+    memset(app.constraint_operator_combos, 0, sizeof(app.constraint_operator_combos));
     memset(app.constraint_rhs_entries, 0, sizeof(app.constraint_rhs_entries));
     app.nvars = (size_t)nv;
     app.nconstraints = (size_t)nc;
@@ -135,15 +137,14 @@ static void on_generate_fields_clicked(GtkButton *button, gpointer user_data) {
             gtk_box_pack_start(GTK_BOX(row), app.constraint_coeff_entries[i][j], FALSE, FALSE, 0);
         }
         GtkWidget *operator_combo = gtk_combo_box_text_new();
-
-        gtk_combo_box_text_append_text(
-            GTK_COMBO_BOX_TEXT(operator_combo), "≤");
+        app.constraint_operator_combos[i] = operator_combo;
         
-        gtk_combo_box_text_append_text(
-            GTK_COMBO_BOX_TEXT(operator_combo), "≥");
-        
-        gtk_combo_box_text_append_text(
-            GTK_COMBO_BOX_TEXT(operator_combo), "=");
+        gtk_combo_box_text_append(
+            GTK_COMBO_BOX_TEXT(operator_combo), "LE", "≤");
+        gtk_combo_box_text_append(
+            GTK_COMBO_BOX_TEXT(operator_combo), "GE", "≥");
+        gtk_combo_box_text_append(
+            GTK_COMBO_BOX_TEXT(operator_combo), "EQ", "=");
         
         gtk_combo_box_set_active(
             GTK_COMBO_BOX(operator_combo), 0);
@@ -203,7 +204,7 @@ static char *latex_escape(const char *input) {
     return g_string_free(out, FALSE);
 }
 
-typedef struct { double **cells; size_t rows; size_t cols; } TableauSnapshot;
+typedef struct { double **cells; double *big_M; size_t rows; size_t cols; } TableauSnapshot;
 
 typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row; 
 double *min_ratios; TableauSnapshot tableau_after;} TableauStepSnapshot;
@@ -213,12 +214,18 @@ static void free_snapshot(TableauSnapshot *snap) {
     for (size_t r = 0; r < snap->rows; ++r) free(snap->cells[r]);
     free(snap->cells);
     snap->cells = NULL;
+    snap->big_M = NULL;
 }
 
 static gboolean save_snapshot(TableauSnapshot *snap, const SPTableau *spt) {
     if (!snap || !spt || !spt->tableau) return FALSE;
     snap->rows = spt->num_rows;
     snap->cols = spt->num_cols;
+
+    snap->big_M = malloc(snap->cols * sizeof(*snap->big_M));
+    if (!snap->big_M) return FALSE;
+    memcpy(snap->big_M, spt->big_M, snap->cols * sizeof(*snap->big_M));
+
     snap->cells = calloc(snap->rows, sizeof(*snap->cells));
     if (!snap->cells) return FALSE;
     for (size_t r = 0; r < snap->rows; ++r) {
@@ -241,7 +248,7 @@ static void write_tableau(FILE *f, const SPTableau *tableau_template, const Tabl
 static const char *status_text(enum SPTableauStatus status) {
     switch (status) {
         case SPT_OPTIMAL_SOLUTION_FOUND: return "Optimal solution found.";
-        case SPT_MULTPILE_SOLUTIONS_DETECTED: return "Multiple optimal solutions found.";
+        case SPT_MULTIPLE_SOLUTIONS_DETECTED: return "Multiple optimal solutions found.";
         case SPT_DEGENERATED_PROBLEM: return "Degenerated problem detected.";
         case SPT_UNBOUNDED_PROBLEM: return "Unbounded problem.";
         case SPT_DEGENERATED_LOOP: return "Algorithm halted, degenerated loop";
@@ -317,7 +324,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
 
     TableauSnapshot final_snapshot = {0};
     if (save_snapshot(&final_snapshot, spt)) {
-        if (final_status == SPT_MULTPILE_SOLUTIONS_DETECTED &&
+        if (final_status == SPT_MULTIPLE_SOLUTIONS_DETECTED &&
             multiple_solutions != NULL &&
             first_multiple_tableau != NULL &&
             first_multiple_tableau->cells != NULL) {
@@ -443,7 +450,19 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
             lp_constraints_free(constraints); lp_objectivefunc_free(obj); lp_decisionvars_free(vars);
             show_error("Couldn't create coefficients from constraints."); return;
         }
-        lp_constraints_add_constraint(constraints, row, LE, rhs);
+        const char *operator_id = gtk_combo_box_get_active_id(
+            GTK_COMBO_BOX(app.constraint_operator_combos[i]));
+        enum LPConstraintType type;
+        if (g_strcmp0(operator_id, "LE") == 0) {
+            type = LE;
+        } else if (g_strcmp0(operator_id, "GE") == 0) {
+            type = GE;
+        } else if (g_strcmp0(operator_id, "EQ") == 0) {
+            type = EQ;
+        } else {
+            //TODO: Show an error and clean up the partially created model.
+        }
+        lp_constraints_add_constraint(constraints, row, type, rhs);
         lp_coefficients_free(row);
     }
 
@@ -469,6 +488,19 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     size_t steps = 0;
     enum SPTableauStatus result = SPT_STANDBY;
     while (steps < MAX_SIMPLEX_STEPS) {
+
+        if (spt->two_step_method) {
+            result = sp_tableau_solve_step(spt);
+            if (result == SPT_TSP_STEP_ZERO_DONE) {
+                //TODO: Save snapshot of the tableau after step zero.
+                steps++;
+                continue;
+            } else {
+                show_error("Problem occurred during two-step method.");
+                return;
+            }
+        }
+
         size_t pivot_column = sp_tableau_get_pivot_column(spt);
         double *min_ratios = NULL;
         size_t pivot_row = 0;
@@ -507,13 +539,11 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
         }
 
         if (result == SPT_OPTIMAL_SOLUTION_FOUND ||
-            result == SPT_MULTPILE_SOLUTIONS_DETECTED ||
+            result == SPT_MULTIPLE_SOLUTIONS_DETECTED ||
             result == SPT_UNBOUNDED_PROBLEM || result == SPT_DEGENERATED_LOOP ||
             result == SPT_INFEASIBLE_PROBLEM || result == SPT_INVALID_STATE) break;
     }
-    if (steps >= MAX_SIMPLEX_STEPS && result != SPT_OPTIMAL_SOLUTION_FOUND && 
-        result != SPT_MULTPILE_SOLUTIONS_DETECTED && result != SPT_UNBOUNDED_PROBLEM &&
-        result != SPT_INFEASIBLE_PROBLEM && result != SPT_INVALID_STATE)
+    if (steps >= MAX_SIMPLEX_STEPS && result != SPT_OPTIMAL_SOLUTION_FOUND && result != SPT_MULTIPLE_SOLUTIONS_DETECTED && result != SPT_UNBOUNDED_PROBLEM && result != SPT_INFEASIBLE_PROBLEM && result != SPT_INVALID_STATE)
         result = SPT_DEGENERATED_LOOP;
 
     TableauSnapshot first_multiple_tableau = {0};
@@ -521,7 +551,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     SPBaseSolution *bfs_b = NULL;
     SPMultiSolutions *multiple_solutions = NULL;
 
-    if (result == SPT_MULTPILE_SOLUTIONS_DETECTED &&
+    if (result == SPT_MULTIPLE_SOLUTIONS_DETECTED &&
         save_snapshot(&first_multiple_tableau, spt)) {
         bfs_a = sp_tableau_get_base_sol(spt);
 
