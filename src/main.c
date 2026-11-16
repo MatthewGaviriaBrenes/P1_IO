@@ -205,7 +205,8 @@ static char *latex_escape(const char *input) {
 
 typedef struct { double **cells; size_t rows; size_t cols; } TableauSnapshot;
 
-typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row; double *min_ratios; TableauSnapshot tableau_after;} TableauStepSnapshot;
+typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row; 
+double *min_ratios; TableauSnapshot tableau_after;} TableauStepSnapshot;
 
 static void free_snapshot(TableauSnapshot *snap) {
     if (!snap || !snap->cells) return;
@@ -265,13 +266,6 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     if (!f) return FALSE;
 
     char *safe_problem_name = latex_escape(problem_name);
-    /*fprintf(f, "\\documentclass[11pt]{article}\n"
-               "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n"
-               "\\usepackage[spanish]{babel}\n\\usepackage{geometry}\n"
-               "\\usepackage{amsmath}\n\\geometry{margin=2cm}\n"
-               "\\usepackage{booktabs}\n"
-               "\\title{Informe del método Simplex}\\author{%s}\\date{%s}\n"
-               "\\begin{document}\\maketitle\n",safe_members, safe_semester);*/
     
     // Document Cover
     presentation_preamble(f);
@@ -282,39 +276,6 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     
     // Problem Definition (name and mathematical model)
     presentation_original_problem(f, safe_problem_name, lp);
-
-    // fprintf(f, "\\section*{Problem Name:}\n%s\n", safe_problem_name);
-    // fprintf(f, "\\section*{Mathematical Model}\n");
-    // fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
-    // for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-    //     double a = lp->objective_function->coeffs->coefficients[j];
-    //     if (a == 0.0) {
-    //         continue;
-    //     }
-    //     if (a < 0.0) {
-    //         fprintf(f, j == 0 ? "-" : " - ");
-    //     } else if (j > 0) {
-    //         fprintf(f, " + ");
-    //     }
-    //     fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
-    // }
-    // fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.\t}\n");
-    // for (size_t i = 0; i < lp->constraints->count; ++i) {
-    //     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-    //         double a = lp->constraints->coeff_sets[i]->coefficients[j];
-    //         if (a == 0.0) {
-    //             continue;
-    //         }
-    //         if (a < 0.0) {
-    //             fprintf(f, j == 0 ? "-" : " - ");
-    //         } else if (j > 0) {
-    //             fprintf(f, " + ");
-    //         }
-    //         fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
-    //     }
-    //     fprintf(f, " &\\le %.4g \\\\\n", lp->constraints->rhs_values[i]);
-    // }
-    // fprintf(f, "x_j &\\ge 0\\quad\\text{for every variable }j\n\\end{align*}\n");
 
     // Print initial tableau
     write_tableau(f, spt, initial_snapshot, "Initial table");
@@ -381,7 +342,8 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                       (gchar *)"-halt-on-error", (gchar *)tex_path, NULL };
     gint exit_status = -1;
     GError *error = NULL;
-    gboolean spawned = g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
+    gboolean spawned = g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL |
+     G_SPAWN_STDERR_TO_DEV_NULL,
                                     NULL, NULL, NULL, NULL, &exit_status, &error);
     if (!spawned || !g_spawn_check_wait_status(exit_status, &error)) {
         gchar *msg = g_strdup_printf("Couldn't compile PDF. Download pdflatex and install it. Source: %s%s%s",
@@ -451,7 +413,8 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
 
     LPCoefficients *obj_coeffs = lp_coefficients_create_from_array(app.nvars, obj_values);
     if (!obj_coeffs) { lp_decisionvars_free(vars); show_error("Couldn't create coefficients."); return; }
-    enum ObjectiveFunctionType obj_type = gtk_combo_box_get_active(GTK_COMBO_BOX(app.objective_combo)) == 1 ? MINIMIZE : MAXIMIZE;
+    enum ObjectiveFunctionType obj_type = gtk_combo_box_get_active(
+        GTK_COMBO_BOX(app.objective_combo)) == 1 ? MINIMIZE : MAXIMIZE;
     LPObjectiveFunc *obj = lp_objectivefunc_create(obj_type, app.nvars, obj_coeffs);
     if (!obj) {
         lp_coefficients_free(obj_coeffs); lp_decisionvars_free(vars);
@@ -548,7 +511,9 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
             result == SPT_UNBOUNDED_PROBLEM || result == SPT_DEGENERATED_LOOP ||
             result == SPT_INFEASIBLE_PROBLEM || result == SPT_INVALID_STATE) break;
     }
-    if (steps >= MAX_SIMPLEX_STEPS && result != SPT_OPTIMAL_SOLUTION_FOUND && result != SPT_MULTPILE_SOLUTIONS_DETECTED && result != SPT_UNBOUNDED_PROBLEM && result != SPT_INFEASIBLE_PROBLEM && result != SPT_INVALID_STATE)
+    if (steps >= MAX_SIMPLEX_STEPS && result != SPT_OPTIMAL_SOLUTION_FOUND && 
+        result != SPT_MULTPILE_SOLUTIONS_DETECTED && result != SPT_UNBOUNDED_PROBLEM &&
+        result != SPT_INFEASIBLE_PROBLEM && result != SPT_INVALID_STATE)
         result = SPT_DEGENERATED_LOOP;
 
     TableauSnapshot first_multiple_tableau = {0};
