@@ -355,7 +355,7 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
                 }
             }
         }
-
+ 
         if (row == 0 || min_ratios == NULL || min_ratios[row] < 0.0 ||
             !valid_pivot_column || tableau->tableau[row][pivot_column] <= 0.0) {
             fprintf(file, " & --");
