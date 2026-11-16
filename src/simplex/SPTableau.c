@@ -181,10 +181,13 @@ bool sp_tableau_init_big_M_row(SPTableau *spt) {
         return false;
     } 
 
-    spt->big_M = (double *)calloc(spt->num_cols, sizeof(double));
+    spt->big_M = (double *)malloc(spt->num_cols * sizeof(double));
     if (!spt->big_M) {
         //printf("Error: Memory allocation failed for Big M coefficients array.\n");
         return false;
+    } 
+    for (size_t j = 0; j < spt->num_cols; j++) {
+        spt->big_M[j] = 0.0;
     }
     return true;
 }
@@ -521,7 +524,7 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
 
         // If the coefficient is zero and no other pivot column has been found yet, 
         // consider it as a potential pivot column for multiple solutions unless it is already in the base.
-        if (value == 0.0) {
+        if (value == 0.0 && best_value == 0.0 && best_big_m == 0.0) {
             if (!sp_tableau_is_base_column(spt, col_index)) {
                 select_pivot_col = col_index; 
             }
@@ -529,7 +532,6 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
 
         // Two decision variables have the same coefficients (normal and big M).
         // Use a random binary selection as a tiebreaker.
-        //TODO: Check if tie in entering variables means the problem is degenerated.
         else if (value == best_value && spt->big_M[col_index] == best_big_m) {
             if (rand() % 2 == 0) {
                 select_pivot_col = col_index;
@@ -729,7 +731,13 @@ void sp_tableau_canonize_nonpivot_rows(SPTableau *spt, size_t pivot_row_index, s
             spt->tableau[np_row][np_col] += eliminiation_factor * spt->tableau[pivot_row_index][np_col];
 
             if (big_M_elimination != 0) { 
-                spt->big_M[np_col] += big_M_elimination * spt->big_M[pivot_col_index];
+                spt->big_M[np_col] += big_M_elimination * spt->tableau[pivot_row_index][np_col];
+
+                // If the updated big M coefficient is below the feasibility tolerance, 
+                // set it to zero to avoid floating-point precision issues.
+                if (fabs(spt->big_M[np_col]) < SPT_FEASIBILITY_TOLERANCE) {
+                    spt->big_M[np_col] = 0.0;
+                }
             }
         }
     }
@@ -891,7 +899,7 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
     if ((spt->tableau[0][future_pivot_col_index] == 0.0) && (bfs_check == SPBS_VALID_BFS)) {
         //printf("Multiple solutions detected. Non-base variable has coefficient zero in the objective row.\n");
         free(spbs);
-        return SPT_MULTPILE_SOLUTIONS_DETECTED; 
+        return SPT_MULTIPLE_SOLUTIONS_DETECTED; 
     } 
 
     // Step 5 - Check for degeneracy in the tableau

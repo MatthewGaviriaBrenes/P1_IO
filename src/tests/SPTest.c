@@ -65,7 +65,7 @@ void sp_test_base_run(LPDefinition *lp_def, const char *problem_name){
 
     // 5 - Check if the final state of the tableau indicates multiple solutions, optimal solution, or an error state.
     // If multiple solutions are detected, use the helper function (sp_test_get_multiple_solutions) to retrieve two base solutions and calculate midpoint solutions.
-    if (spt_status == SPT_MULTPILE_SOLUTIONS_DETECTED) {
+    if (spt_status == SPT_MULTIPLE_SOLUTIONS_DETECTED) {
         sp_test_get_multiple_solutions(tex_file, spt);
     } else {
         presentation_solution(tex_file, spt, spt_status, NULL);presentation_solution(tex_file, spt, spt_status, NULL);
@@ -127,7 +127,7 @@ void sp_test_get_multiple_solutions(FILE *tex_file, SPTableau *spt) {
     // Resolve again to get another BFS (bfs_b) to generate multiple solutions between bfs_a and bfs_b.
     printf("Running resolver again to find another BFS for multiple solutions test...\n");
     enum SPTableauStatus second_run = sp_tableau_solve_step(spt);
-    if (second_run != SPT_MULTPILE_SOLUTIONS_DETECTED) {
+    if (second_run != SPT_MULTIPLE_SOLUTIONS_DETECTED) {
         printf("Error: Second run of Simplex did not detect multiple solutions as expected. Status: %d\n", second_run);
         sp_base_solution_free(bfs_a);
         return;
@@ -155,7 +155,7 @@ void sp_test_get_multiple_solutions(FILE *tex_file, SPTableau *spt) {
         }
         
         //===============================
-        presentation_solution(tex_file,spt,SPT_MULTPILE_SOLUTIONS_DETECTED, multi_sols);
+        presentation_solution(tex_file,spt,SPT_MULTIPLE_SOLUTIONS_DETECTED, multi_sols);
         //===============================
 
         // Example alphas to calculate midpoint solutions between bfs_a and bfs_b.

@@ -202,9 +202,23 @@ void presentation_tableau(FILE *file,
         }
 
         for (size_t col = 0; col < tableau->num_cols; ++col) {
-            fprintf(file, " & %.4g", tableau->tableau[row][col]);
+            // v2:Updated for objective row coefficients to include big M values.
+            if (row == 0) {
+                if (tableau->tableau[row][col] == 0 && tableau->big_M[col] != 0) {
+                    fprintf(file, " & %.4gM", tableau->big_M[col]);
+                } else if (tableau->big_M[col] != 0) {
+                    if (tableau->big_M[col] < 0) {
+                        fprintf(file, " & %.4g - %.4gM", tableau->tableau[row][col], -tableau->big_M[col]);
+                    } else {
+                        fprintf(file, " & %.4g + %.4gM", tableau->tableau[row][col], tableau->big_M[col]);
+                    }
+                } else {
+                    fprintf(file, " & %.4g", tableau->tableau[row][col]);
+                }
+            } else {
+                fprintf(file, " & %.4g", tableau->tableau[row][col]);
+            }
         }
-
         fprintf(file, " \\\\\n");
     }
 
@@ -213,6 +227,7 @@ void presentation_tableau(FILE *file,
     fprintf(file, "\\end{center}\n\n");
 }
 
+//TODO: Show big M coefficients for pivot selection tableaus (when applicable).
 void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
     const char *title, size_t pivot_column, size_t pivot_row, const double *min_ratios){
     if (file == NULL || tableau == NULL || tableau->tableau == NULL ||
@@ -535,7 +550,7 @@ void presentation_solution(FILE *file, const SPTableau *tableau,
             break;
         }
 
-        case SPT_MULTPILE_SOLUTIONS_DETECTED:
+        case SPT_MULTIPLE_SOLUTIONS_DETECTED:
             fprintf(file, "\\item Multiple optimal solutions detected.\n");
             if (multiple_solutions != NULL) {
 
