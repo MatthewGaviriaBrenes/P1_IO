@@ -240,6 +240,7 @@ static void write_tableau(FILE *f, const SPTableau *tableau_template, const Tabl
 
     SPTableau snapshot_tableau = *tableau_template;
     snapshot_tableau.tableau = snap->cells;
+    snapshot_tableau.big_M = snap->big_M;
 
     presentation_tableau(f, &snapshot_tableau, caption);
 }
@@ -333,6 +334,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
             g_snprintf(caption, sizeof(caption), "Step %zu", k + 1);
             SPTableau snapshot_tableau = *spt;
             snapshot_tableau.tableau = history[k].tableau.cells;
+            snapshot_tableau.big_M = history[k].tableau.big_M;
             presentation_intermediate_tableau(f, &snapshot_tableau, 
                 caption, history[k].pivot_column,history[k].pivot_row, 
                 history[k].min_ratios);
