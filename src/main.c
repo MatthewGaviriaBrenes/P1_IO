@@ -210,9 +210,12 @@ typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row;
 double *min_ratios; TableauSnapshot tableau_after;} TableauStepSnapshot;
 
 static void free_snapshot(TableauSnapshot *snap) {
-    if (!snap || !snap->cells) return;
-    for (size_t r = 0; r < snap->rows; ++r) free(snap->cells[r]);
+    if (!snap) return;
+    if (snap->cells) {
+        for (size_t r = 0; r < snap->rows; ++r) free(snap->cells[r]);
+    }
     free(snap->cells);
+    free(snap->big_M);
     snap->cells = NULL;
     snap->big_M = NULL;
 }
@@ -241,6 +244,7 @@ static void write_tableau(FILE *f, const SPTableau *tableau_template, const Tabl
 
     SPTableau snapshot_tableau = *tableau_template;
     snapshot_tableau.tableau = snap->cells;
+    snapshot_tableau.big_M = snap->big_M;
 
     presentation_tableau(f, &snapshot_tableau, caption);
 }
@@ -263,6 +267,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      gboolean include_intermediate, size_t steps,
                                      enum SPTableauStatus final_status,
                                      const TableauSnapshot *initial_snapshot,
+                                     const TableauSnapshot *step_zero_snapshot,
                                      const TableauStepSnapshot *history,
                                      size_t history_count,
                                      size_t degeneracy_level,
@@ -287,6 +292,10 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     // Print initial tableau
     write_tableau(f, spt, initial_snapshot, "Initial table");
 
+    if (step_zero_snapshot != NULL && step_zero_snapshot->cells != NULL) {
+        write_tableau(f, spt, step_zero_snapshot, "Table after step 0");
+    }
+
     if (include_intermediate && history_count > 0) {
         fprintf(f, "\\section{Middle tables}\nTable states were saved during the iterations\\par\n");
         for (size_t k = 0; k < history_count; ++k) {
@@ -294,6 +303,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
             g_snprintf(caption, sizeof(caption), "Step %zu", k + 1);
             SPTableau snapshot_tableau = *spt;
             snapshot_tableau.tableau = history[k].tableau.cells;
+            snapshot_tableau.big_M = history[k].tableau.big_M;
             presentation_intermediate_tableau(f, &snapshot_tableau, 
                 caption, history[k].pivot_column,history[k].pivot_row, 
                 history[k].min_ratios);
@@ -479,6 +489,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
 
     gboolean include_intermediate = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(app.show_intermediate_check));
     TableauSnapshot initial_snapshot = {0};
+    TableauSnapshot step_zero_snapshot = {0};
     TableauStepSnapshot *history = include_intermediate ? calloc(MAX_SIMPLEX_STEPS, sizeof(*history)) : NULL;
     size_t history_count = 0;
     if (!save_snapshot(&initial_snapshot, spt)) {
@@ -492,8 +503,12 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
         if (spt->two_step_method) {
             result = sp_tableau_solve_step(spt);
             if (result == SPT_TSP_STEP_ZERO_DONE) {
-                //TODO: Save snapshot of the tableau after step zero.
                 steps++;
+                if (!save_snapshot(&step_zero_snapshot, spt)) {
+                    show_error("Couldn't save tableau after step zero.");
+                    result = SPT_INVALID_STATE;
+                    break;
+                }
                 continue;
             } else {
                 show_error("Problem occurred during two-step method.");
@@ -577,7 +592,8 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     if (!problem_name || !*problem_name) problem_name = "Linear Programming Problem";
     gboolean pdf_ok = write_report_and_pdf(lp, spt, problem_name, result_message,
                                            include_intermediate, steps, result,
-                                           &initial_snapshot, history, history_count,
+                                           &initial_snapshot, &step_zero_snapshot,
+                                           history, history_count,
                                            spt->degeneracy_level,
                                            &first_multiple_tableau,
                                            multiple_solutions);
@@ -589,6 +605,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     g_free(summary);
 
     free_snapshot(&initial_snapshot);
+    free_snapshot(&step_zero_snapshot);
     for (size_t k = 0; k < history_count; ++k) {
         free_snapshot(&history[k].tableau); 
         free(history[k].min_ratios);
