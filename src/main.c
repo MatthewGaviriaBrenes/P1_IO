@@ -206,12 +206,16 @@ static char *latex_escape(const char *input) {
 
 typedef struct { double **cells; double *big_M; size_t rows; size_t cols; } TableauSnapshot;
 
-typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row; double *min_ratios; TableauSnapshot tableau_after;} TableauStepSnapshot;
+typedef struct {TableauSnapshot tableau; size_t pivot_column; size_t pivot_row; 
+double *min_ratios; TableauSnapshot tableau_after;} TableauStepSnapshot;
 
 static void free_snapshot(TableauSnapshot *snap) {
-    if (!snap || !snap->cells) return;
-    for (size_t r = 0; r < snap->rows; ++r) free(snap->cells[r]);
+    if (!snap) return;
+    if (snap->cells) {
+        for (size_t r = 0; r < snap->rows; ++r) free(snap->cells[r]);
+    }
     free(snap->cells);
+    free(snap->big_M);
     snap->cells = NULL;
     snap->big_M = NULL;
 }
@@ -226,7 +230,10 @@ static gboolean save_snapshot(TableauSnapshot *snap, const SPTableau *spt) {
     memcpy(snap->big_M, spt->big_M, snap->cols * sizeof(*snap->big_M));
 
     snap->cells = calloc(snap->rows, sizeof(*snap->cells));
-    if (!snap->cells) return FALSE;
+    if (!snap->cells) {
+        free_snapshot(snap);
+        return FALSE;
+    }
     for (size_t r = 0; r < snap->rows; ++r) {
         snap->cells[r] = malloc(snap->cols * sizeof(*snap->cells[r]));
         if (!snap->cells[r]) { free_snapshot(snap); return FALSE; }
@@ -263,6 +270,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                                      gboolean include_intermediate, size_t steps,
                                      enum SPTableauStatus final_status,
                                      const TableauSnapshot *initial_snapshot,
+                                     const TableauSnapshot *step_zero_snapshot,
                                      const TableauStepSnapshot *history,
                                      size_t history_count,
                                      size_t degeneracy_level,
@@ -273,13 +281,6 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     if (!f) return FALSE;
 
     char *safe_problem_name = latex_escape(problem_name);
-    /*fprintf(f, "\\documentclass[11pt]{article}\n"
-               "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n"
-               "\\usepackage[spanish]{babel}\n\\usepackage{geometry}\n"
-               "\\usepackage{amsmath}\n\\geometry{margin=2cm}\n"
-               "\\usepackage{booktabs}\n"
-               "\\title{Informe del método Simplex}\\author{%s}\\date{%s}\n"
-               "\\begin{document}\\maketitle\n",safe_members, safe_semester);*/
     
     // Document Cover
     presentation_preamble(f);
@@ -291,41 +292,13 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     // Problem Definition (name and mathematical model)
     presentation_original_problem(f, safe_problem_name, lp);
 
-    // fprintf(f, "\\section*{Problem Name:}\n%s\n", safe_problem_name);
-    // fprintf(f, "\\section*{Mathematical Model}\n");
-    // fprintf(f, "\\[ %s \\quad Z = ", lp->objective_function->type == MAXIMIZE ? "\\max" : "\\min");
-    // for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-    //     double a = lp->objective_function->coeffs->coefficients[j];
-    //     if (a == 0.0) {
-    //         continue;
-    //     }
-    //     if (a < 0.0) {
-    //         fprintf(f, j == 0 ? "-" : " - ");
-    //     } else if (j > 0) {
-    //         fprintf(f, " + ");
-    //     }
-    //     fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
-    // }
-    // fprintf(f, " \\]\n\\begin{align*}\n\\text{S.t.\t}\n");
-    // for (size_t i = 0; i < lp->constraints->count; ++i) {
-    //     for (size_t j = 0; j < lp->num_decision_vars; ++j) {
-    //         double a = lp->constraints->coeff_sets[i]->coefficients[j];
-    //         if (a == 0.0) {
-    //             continue;
-    //         }
-    //         if (a < 0.0) {
-    //             fprintf(f, j == 0 ? "-" : " - ");
-    //         } else if (j > 0) {
-    //             fprintf(f, " + ");
-    //         }
-    //         fprintf(f, "%.4g\\,x_{%zu}", fabs(a), j + 1);
-    //     }
-    //     fprintf(f, " &\\le %.4g \\\\\n", lp->constraints->rhs_values[i]);
-    // }
-    // fprintf(f, "x_j &\\ge 0\\quad\\text{for every variable }j\n\\end{align*}\n");
-
     // Print initial tableau
     write_tableau(f, spt, initial_snapshot, "Initial table");
+
+    if (step_zero_snapshot != NULL && step_zero_snapshot->cells != NULL) {
+        fprintf(f, "Step 0 introduces artificial variables to obtain a valid initial basis before proceeding with the simplex method.\\par\n");
+        write_tableau(f, spt, step_zero_snapshot, "Table after step 0");
+    }
 
     if (include_intermediate && history_count > 0) {
         fprintf(f, "\\section{Middle tables}\nTable states were saved during the iterations\\par\n");
@@ -390,7 +363,8 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
                       (gchar *)"-halt-on-error", (gchar *)tex_path, NULL };
     gint exit_status = -1;
     GError *error = NULL;
-    gboolean spawned = g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
+    gboolean spawned = g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL |
+     G_SPAWN_STDERR_TO_DEV_NULL,
                                     NULL, NULL, NULL, NULL, &exit_status, &error);
     if (!spawned || !g_spawn_check_wait_status(exit_status, &error)) {
         gchar *msg = g_strdup_printf("Couldn't compile PDF. Download pdflatex and install it. Source: %s%s%s",
@@ -460,7 +434,8 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
 
     LPCoefficients *obj_coeffs = lp_coefficients_create_from_array(app.nvars, obj_values);
     if (!obj_coeffs) { lp_decisionvars_free(vars); show_error("Couldn't create coefficients."); return; }
-    enum ObjectiveFunctionType obj_type = gtk_combo_box_get_active(GTK_COMBO_BOX(app.objective_combo)) == 1 ? MINIMIZE : MAXIMIZE;
+    enum ObjectiveFunctionType obj_type = gtk_combo_box_get_active(
+        GTK_COMBO_BOX(app.objective_combo)) == 1 ? MINIMIZE : MAXIMIZE;
     LPObjectiveFunc *obj = lp_objectivefunc_create(obj_type, app.nvars, obj_coeffs);
     if (!obj) {
         lp_coefficients_free(obj_coeffs); lp_decisionvars_free(vars);
@@ -518,6 +493,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
 
     gboolean include_intermediate = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(app.show_intermediate_check));
     TableauSnapshot initial_snapshot = {0};
+    TableauSnapshot step_zero_snapshot = {0};
     TableauStepSnapshot *history = include_intermediate ? calloc(MAX_SIMPLEX_STEPS, sizeof(*history)) : NULL;
     size_t history_count = 0;
     if (!save_snapshot(&initial_snapshot, spt)) {
@@ -531,8 +507,12 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
         if (spt->two_step_method) {
             result = sp_tableau_solve_step(spt);
             if (result == SPT_TSP_STEP_ZERO_DONE) {
-                //TODO: Save snapshot of the tableau after step zero.
                 steps++;
+                if (!save_snapshot(&step_zero_snapshot, spt)) {
+                    show_error("Couldn't save tableau after step zero.");
+                    result = SPT_INVALID_STATE;
+                    break;
+                }
                 continue;
             } else {
                 show_error("Problem occurred during two-step method.");
@@ -616,7 +596,8 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     if (!problem_name || !*problem_name) problem_name = "Linear Programming Problem";
     gboolean pdf_ok = write_report_and_pdf(lp, spt, problem_name, result_message,
                                            include_intermediate, steps, result,
-                                           &initial_snapshot, history, history_count,
+                                           &initial_snapshot, &step_zero_snapshot,
+                                           history, history_count,
                                            spt->degeneracy_level,
                                            &first_multiple_tableau,
                                            multiple_solutions);
@@ -628,6 +609,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
     g_free(summary);
 
     free_snapshot(&initial_snapshot);
+    free_snapshot(&step_zero_snapshot);
     for (size_t k = 0; k < history_count; ++k) {
         free_snapshot(&history[k].tableau); 
         free(history[k].min_ratios);
