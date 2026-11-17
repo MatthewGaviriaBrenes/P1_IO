@@ -227,7 +227,6 @@ void presentation_tableau(FILE *file,
     fprintf(file, "\\end{center}\n\n");
 }
 
-//TODO: Show big M coefficients for pivot selection tableaus (when applicable).
 void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
     const char *title, size_t pivot_column, size_t pivot_row, const double *min_ratios){
     if (file == NULL || tableau == NULL || tableau->tableau == NULL ||
