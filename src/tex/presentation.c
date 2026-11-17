@@ -339,7 +339,7 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
                     }
                 }
                 else {
-                    fprintf(file, "\\cellcolor{blue!15}%.4g}", tableau->tableau[row][col]);
+                    fprintf(file, "\\cellcolor{blue!15}%.4g", tableau->tableau[row][col]);
                 }
             } else {
                 if (row == 0) {
