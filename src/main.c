@@ -230,7 +230,10 @@ static gboolean save_snapshot(TableauSnapshot *snap, const SPTableau *spt) {
     memcpy(snap->big_M, spt->big_M, snap->cols * sizeof(*snap->big_M));
 
     snap->cells = calloc(snap->rows, sizeof(*snap->cells));
-    if (!snap->cells) return FALSE;
+    if (!snap->cells) {
+        free_snapshot(snap);
+        return FALSE;
+    }
     for (size_t r = 0; r < snap->rows; ++r) {
         snap->cells[r] = malloc(snap->cols * sizeof(*snap->cells[r]));
         if (!snap->cells[r]) { free_snapshot(snap); return FALSE; }
@@ -293,6 +296,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     write_tableau(f, spt, initial_snapshot, "Initial table");
 
     if (step_zero_snapshot != NULL && step_zero_snapshot->cells != NULL) {
+        fprintf(f, "Step 0 introduces artificial variables to obtain a valid initial basis before proceeding with the simplex method.\\par\n");
         write_tableau(f, spt, step_zero_snapshot, "Table after step 0");
     }
 
