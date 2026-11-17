@@ -227,7 +227,6 @@ void presentation_tableau(FILE *file,
     fprintf(file, "\\end{center}\n\n");
 }
 
-//TODO: Show big M coefficients for pivot selection tableaus (when applicable).
 void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
     const char *title, size_t pivot_column, size_t pivot_row, const double *min_ratios){
     if (file == NULL || tableau == NULL || tableau->tableau == NULL ||
@@ -313,45 +312,49 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
             fprintf(file, " & ");
 
             if (valid_pivot && row == pivot_row && col == pivot_column) {
-                fprintf(file, "\\cellcolor{green!10}$\\boxed{");
-                
-                if (row == 0 && tableau->big_M != NULL &&
-                    tableau->big_M[col] != 0.0) {
-
-                    double m = tableau->big_M[col];
-                    double coefficient = tableau->tableau[row][col];
-
-                    if (coefficient == 0.0) {
-                        fprintf(file, "%.4gM", m);
-                    } else if (m < 0.0) {
-                        fprintf(file, "%.4g - %.4gM", coefficient, -m);
+                if (row == 0) {
+                    if (tableau->tableau[row][col] == 0 && tableau->big_M[col] != 0) {
+                        fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4gM}", tableau->big_M[col]);
+                    } else if (tableau->big_M[col] != 0) {
+                        if (tableau->big_M[col] < 0) {
+                            fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g - %.4gM}", tableau->tableau[row][col], -tableau->big_M[col]);
+                        } else {
+                            fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g + %.4gM}", tableau->tableau[row][col], tableau->big_M[col]);
+                        }
                     } else {
-                        fprintf(file, "%.4g + %.4gM", coefficient, m);
+                        fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g}", tableau->tableau[row][col]);
                     }
-
+                } else { 
+                    fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g}", tableau->tableau[row][col]);
+                }
+            } else if (valid_pivot_column && col == pivot_column) {
+                if (tableau->tableau[row][col] == 0 && tableau->big_M[col] != 0) {
+                    fprintf(file, "\\cellcolor{blue!15}%.4gM", tableau->big_M[col]);
+                } else if (tableau->big_M[col] != 0) {
+                    if (tableau->big_M[col] < 0) {
+                        fprintf(file, "\\cellcolor{blue!15}%.4g - %.4gM", tableau->tableau[row][col], -tableau->big_M[col]);
+                    } else {
+                        fprintf(file, "\\cellcolor{blue!15}%.4g + %.4gM", tableau->tableau[row][col], tableau->big_M[col]);
+                    }
+                }
+                else {
+                    fprintf(file, "\\cellcolor{blue!15}%.4g", tableau->tableau[row][col]);
+                }
+            } else {
+                if (row == 0) {
+                    if (tableau->tableau[row][col] == 0 && tableau->big_M[col] != 0) {
+                        fprintf(file, "%.4gM", tableau->big_M[col]);
+                    } else if (tableau->big_M[col] != 0) {
+                        if (tableau->big_M[col] < 0) {
+                            fprintf(file, "%.4g - %.4gM", tableau->tableau[row][col], -tableau->big_M[col]);
+                        } else {
+                            fprintf(file, "%.4g + %.4gM", tableau->tableau[row][col], tableau->big_M[col]);
+                        }
                     } else {
                         fprintf(file, "%.4g", tableau->tableau[row][col]);
                     }
-                    fprintf(file, "}$");
                 } else {
-                    if (valid_pivot_column && col == pivot_column) {
-                        fprintf(file, "\\cellcolor{blue!15}");
-                    }
-                    if (row == 0 && tableau->big_M != NULL &&
-                        tableau->big_M[col] != 0.0) {
-
-                        double m = tableau->big_M[col];
-                        double coefficient = tableau->tableau[row][col];
-
-                    if (coefficient == 0.0) {
-                        fprintf(file, "$%.4gM$", m);
-                    } else if (m < 0.0) {
-                        fprintf(file, "$%.4g - %.4gM$", coefficient, -m);
-                    } else {
-                        fprintf(file, "$%.4g + %.4gM$", coefficient, m);
-                    }
-                } else {
-                    fprintf(file, "$%.4g$", tableau->tableau[row][col]);
+                    fprintf(file, "%.4g", tableau->tableau[row][col]);
                 }
             }
         }

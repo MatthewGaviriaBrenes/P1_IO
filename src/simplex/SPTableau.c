@@ -519,7 +519,10 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
     double best_value = 0.0; 
     double best_big_m = 0.0;
 
-    for (size_t col_index = 1; col_index < spt->num_cols - 1; col_index++) { // Exclude Z column (0) and RHS column (last)
+    // Amount of variables that can be selected to enter the base (decision vars + surplus vars + Z for indexing).
+    size_t selectable_vars = 1 + spt->num_decision_vars + spt->num_slack_vars;
+
+    for (size_t col_index = 1; col_index < selectable_vars; col_index++) { // Exclude Z column (0) and RHS column (last)
         double value = spt->tableau[0][col_index];
 
         // If the coefficient is zero and no other pivot column has been found yet, 
@@ -541,6 +544,10 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
         // Maximization: Look for the most negative coefficient in the objective row (row 0), including big M coefficients.
         else if (spt->lp_def->objective_function->type == MAXIMIZE) {
             if (spt->big_M[col_index] != 0.0) {
+                // Positive big M coefficients renders the column ineligible for pivoting in maximization problems, so skip it.
+                if (spt->big_M[col_index] > 0) {
+                    continue;
+                }
                 if (spt->big_M[col_index] < best_big_m) {
                     best_big_m = spt->big_M[col_index];
                     best_value = value;
@@ -558,6 +565,10 @@ size_t sp_tableau_get_pivot_column(const SPTableau *spt) {
         // Minimization: Look for the most positive coefficient in the objective row (row 0), including big M coefficients.
         else if (spt->lp_def->objective_function->type == MINIMIZE) {
             if (spt->big_M[col_index] != 0.0) {
+                // Positive big M coefficients renders the column ineligible for pivoting in minimization problems, so skip it.
+                if (spt->big_M[col_index] < 0) {
+                    continue;
+                }
                 if (spt->big_M[col_index] > best_big_m) {
                     best_big_m = spt->big_M[col_index];
                     best_value = value;
@@ -590,6 +601,7 @@ double *sp_tableau_calculate_min_ratios(const SPTableau *spt, size_t pivot_col_i
     }
 
     double *min_ratios = malloc(spt->num_rows * sizeof(double));
+
     if (!min_ratios) {
         //printf("Error: Memory allocation failed for minimum ratios array.\n");
         return NULL;
@@ -803,6 +815,9 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         //printf("Information: Two-step method is enabled. Performing step 0 to normalize the tableau.\n");
         return sp_tableau_solve_step_zero(spt);
     }
+
+
+
 
     // Step 1 - Get the pivot column (variable entering the base).
     // If no valid pivot column is found, validate current base solution to confirm if valid (BFS) and optimal solution.
