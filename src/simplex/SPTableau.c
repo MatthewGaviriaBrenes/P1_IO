@@ -792,6 +792,20 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         return SPT_INVALID_STATE;
     }
 
+    /// DEBUG ///
+    printf("\n--- Simplex Step ---\n");
+    printf("Objective row coefficients: ");
+    for (size_t col = 0; col < spt->num_cols; col++) {
+        printf("%f ", spt->tableau[0][col]);
+    }
+    printf("\nBig M coefficients: ");
+    for (size_t col = 0; col < spt->num_cols; col++) {
+        printf("%f ", spt->big_M[col]);
+    }
+    printf("\n");
+    ///////////
+
+
     // Do not allow the simplex algorithm to continue if the degeneracy level exceeds a threshold to avoid infinite cycling.
     if (spt->degeneracy_level >= SPT_DEGENERATION_THRESHOLD) {
         //printf("Error: Severe degeneracy detected. Problem is stuck in a degenerate state and cannot be resolved.\n");
@@ -803,6 +817,9 @@ enum SPTableauStatus sp_tableau_solve_step(SPTableau *spt) {
         //printf("Information: Two-step method is enabled. Performing step 0 to normalize the tableau.\n");
         return sp_tableau_solve_step_zero(spt);
     }
+
+
+
 
     // Step 1 - Get the pivot column (variable entering the base).
     // If no valid pivot column is found, validate current base solution to confirm if valid (BFS) and optimal solution.

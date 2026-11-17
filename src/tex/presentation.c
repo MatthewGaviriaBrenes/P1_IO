@@ -313,14 +313,50 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
             fprintf(file, " & ");
 
             if (valid_pivot && row == pivot_row && col == pivot_column) {
-                fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g}", tableau->tableau[row][col]);
-            
-            } else {
-                if (valid_pivot_column && col == pivot_column) {
-                    fprintf(file, "\\cellcolor{blue!15}");
+                if (row == 0) {
+                    if (tableau->tableau[row][col] == 0 && tableau->big_M[col] != 0) {
+                        fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4gM}", tableau->big_M[col]);
+                    } else if (tableau->big_M[col] != 0) {
+                        if (tableau->big_M[col] < 0) {
+                            fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g - %.4gM}", tableau->tableau[row][col], -tableau->big_M[col]);
+                        } else {
+                            fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g + %.4gM}", tableau->tableau[row][col], tableau->big_M[col]);
+                        }
+                    } else {
+                        fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g}", tableau->tableau[row][col]);
+                    }
+                } else { 
+                    fprintf(file, "\\cellcolor{green!10}" "\\boxed{%.4g}", tableau->tableau[row][col]);
                 }
-                fprintf(file, "%.4g", tableau->tableau[row][col]);
-            
+            } else if (valid_pivot_column && col == pivot_column) {
+                if (tableau->tableau[row][col] == 0 && tableau->big_M[col] != 0) {
+                    fprintf(file, "\\cellcolor{blue!15}%.4gM", tableau->big_M[col]);
+                } else if (tableau->big_M[col] != 0) {
+                    if (tableau->big_M[col] < 0) {
+                        fprintf(file, "\\cellcolor{blue!15}%.4g - %.4gM", tableau->tableau[row][col], -tableau->big_M[col]);
+                    } else {
+                        fprintf(file, "\\cellcolor{blue!15}%.4g + %.4gM", tableau->tableau[row][col], tableau->big_M[col]);
+                    }
+                }
+                else {
+                    fprintf(file, "\\cellcolor{blue!15}%.4g}", tableau->tableau[row][col]);
+                }
+            } else {
+                if (row == 0) {
+                    if (tableau->tableau[row][col] == 0 && tableau->big_M[col] != 0) {
+                        fprintf(file, "%.4gM", tableau->big_M[col]);
+                    } else if (tableau->big_M[col] != 0) {
+                        if (tableau->big_M[col] < 0) {
+                            fprintf(file, "%.4g - %.4gM", tableau->tableau[row][col], -tableau->big_M[col]);
+                        } else {
+                            fprintf(file, "%.4g + %.4gM", tableau->tableau[row][col], tableau->big_M[col]);
+                        }
+                    } else {
+                        fprintf(file, "%.4g", tableau->tableau[row][col]);
+                    }
+                } else {
+                    fprintf(file, "%.4g", tableau->tableau[row][col]);
+                }
             }
         }
 
