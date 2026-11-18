@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "simplex/LPDefinition.h"
 #include "simplex/SPTableau.h"
@@ -474,7 +475,13 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
         } else if (g_strcmp0(operator_id, "EQ") == 0) {
             type = EQ;
         } else {
-            //TODO: Show an error and clean up the partially created model.
+            /* The combo has no valid active ID: release everything built so far. */
+            lp_coefficients_free(row);
+            lp_constraints_free(constraints);
+            lp_objectivefunc_free(obj);
+            lp_decisionvars_free(vars);
+            show_error("Select a valid operator (≤, ≥ or =) for every constraint.");
+            return;
         }
         lp_constraints_add_constraint(constraints, row, type, rhs);
         lp_coefficients_free(row);
