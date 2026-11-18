@@ -46,6 +46,7 @@ void presentation_preamble(FILE *file)
     fprintf(file, "\\usepackage{booktabs}\n");
     fprintf(file, "\\usepackage{array}\n");
     fprintf(file, "\\usepackage{graphicx}\n");
+    fprintf(file, "\\newsavebox{\\simplexTableBox}\n");
     fprintf(file, "\\usepackage[table]{xcolor}\n");
     fprintf(file, "\\usepackage[expansion=false]{microtype}\n\n");
     fprintf(file, "\\title{Project 02 - Simplex Solver v2}\n");
@@ -140,6 +141,7 @@ void presentation_tableau(FILE *file,
     fprintf(file, "\\setlength{\\tabcolsep}{8pt}\n");
 
     //One column for label row and one for each column of the tableau
+    fprintf(file, "\\begin{lrbox}{\\simplexTableBox}\n");
     fprintf(file, "\\begin{tabular}{c");
     for (size_t col = 0; col < tableau->num_cols; ++col) {
         fprintf(file, "c");
@@ -224,6 +226,12 @@ void presentation_tableau(FILE *file,
 
     fprintf(file, "\\bottomrule\n");
     fprintf(file, "\\end{tabular}\n");
+    fprintf(file, "\\end{lrbox}\n");
+    fprintf(file, "\\ifdim\\wd\\simplexTableBox>\\textwidth\n");
+    fprintf(file, "\\resizebox{\\textwidth}{!}{\\usebox{\\simplexTableBox}}\n");
+    fprintf(file, "\\else\n");
+    fprintf(file, "\\usebox{\\simplexTableBox}\n");
+    fprintf(file, "\\fi\n");
     fprintf(file, "\\end{center}\n\n");
 }
 
@@ -248,6 +256,7 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
 
     // label tableau rows and columns, adds column for ratios
     // highlights the pivot column and pivot row if valid.
+    fprintf(file, "\\begin{lrbox}{\\simplexTableBox}\n");
     fprintf(file, "\\begin{tabular}{c");
     for (size_t col = 0; col < tableau->num_cols + 1; ++col) {
         fprintf(file, "c");
@@ -372,6 +381,12 @@ void presentation_intermediate_tableau(FILE *file, const SPTableau *tableau,
 
     fprintf(file, "\\bottomrule\n");
     fprintf(file, "\\end{tabular}\n");
+    fprintf(file, "\\end{lrbox}\n");
+    fprintf(file, "\\ifdim\\wd\\simplexTableBox>\\textwidth\n");
+    fprintf(file, "\\resizebox{\\textwidth}{!}{\\usebox{\\simplexTableBox}}\n");
+    fprintf(file, "\\else\n");
+    fprintf(file, "\\usebox{\\simplexTableBox}\n");
+    fprintf(file, "\\fi\n");
     fprintf(file, "\\end{center}\n\n");
 
     if (valid_pivot && min_ratios != NULL) {
