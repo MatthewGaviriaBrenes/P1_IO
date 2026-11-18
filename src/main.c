@@ -475,7 +475,7 @@ static void on_solve_clicked(GtkButton *button, gpointer user_data) {
         } else if (g_strcmp0(operator_id, "EQ") == 0) {
             type = EQ;
         } else {
-            /* The combo has no valid active ID: release everything built so far. */
+            /* The combo has no valid active ID*/
             lp_coefficients_free(row);
             lp_constraints_free(constraints);
             lp_objectivefunc_free(obj);
