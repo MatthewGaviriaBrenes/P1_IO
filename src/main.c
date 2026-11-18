@@ -294,11 +294,11 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
     presentation_original_problem(f, safe_problem_name, lp);
 
     // Print initial tableau
-    write_tableau(f, spt, initial_snapshot, "Initial table");
+    write_tableau(f, spt, initial_snapshot, "Initial tableau");
 
     if (step_zero_snapshot != NULL && step_zero_snapshot->cells != NULL) {
-        fprintf(f, "Step 0 introduces artificial variables to obtain a valid initial basis before proceeding with the simplex method.\\par\n");
-        write_tableau(f, spt, step_zero_snapshot, "Table after step 0");
+        fprintf(f, "The initial tableau has artificial variables with big M values in the objective function. Two-Step Method is used to drive the artificial variables out of the objective function (Step 0), setting up a valid initial basis before using the standard simplex algorithm to resolve the problem.\\par\n");
+        write_tableau(f, spt, step_zero_snapshot, "Tableau after step 0");
     }
 
     if (include_intermediate && history_count > 0) {
@@ -316,7 +316,7 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
             if (history[k].tableau_after.cells != NULL) {
                 char after_caption[64];
                 g_snprintf(after_caption, sizeof(after_caption),
-                "Table after pivot %zu", k + 1);
+                "Tableau after pivot %zu", k + 1);
 
                 write_tableau(f, spt, &history[k].tableau_after, after_caption);
             }
@@ -344,11 +344,11 @@ static gboolean write_report_and_pdf(const LPDefinition *lp, SPTableau *spt,
             first_multiple_tableau != NULL &&
             first_multiple_tableau->cells != NULL) {
             write_tableau(f, spt, first_multiple_tableau,
-                          "First optimal final tableau");
+                          "Tableau for First Optimal Solution");
             write_tableau(f, spt, &final_snapshot,
-                          "Second optimal final tableau");
+                          "Tableau for Second Optimal Solution");
         } else {
-            write_tableau(f, spt, &final_snapshot, "Final Table");
+            write_tableau(f, spt, &final_snapshot, "Final Tableau");
         }
         free_snapshot(&final_snapshot);
     }
